@@ -24,6 +24,8 @@ extension InsulinType {
             return TInsulinDatum.Formulation(simple: TInsulinDatum.Formulation.Simple(actingType: .rapid, brand: "Lyumjev"))
         case .afrezza:
             return TInsulinDatum.Formulation(simple: TInsulinDatum.Formulation.Simple(actingType: .rapid, brand: "Afrezza"))
+        case .lantus:
+            return TInsulinDatum.Formulation(simple: TInsulinDatum.Formulation.Simple(actingType: .long, brand: "Lantus"))
         }
     }
 }
