@@ -9,38 +9,32 @@
 import LoopKitUI
 import TidepoolKit
 import TidepoolServiceKit
+import SwiftUI
 
-final class TidepoolServiceSetupViewController: UIViewController {
+
+final class TidepoolServiceSettingsHostController: UIHostingController<SettingsView>, CompletionNotifying {
+
+    var serviceOnboardingDelegate: ServiceOnboardingDelegate?
+    var completionDelegate: CompletionDelegate?
 
     private let service: TidepoolService
 
-    init(service: TidepoolService) {
+    init(rootView: SettingsView, service: TidepoolService) {
         self.service = service
 
-        super.init(nibName: nil, bundle: nil)
+        super.init(rootView: rootView)
+    }
+
+    override func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
+        print("Here")
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        navigationController?.setNavigationBarHidden(true, animated: false)
-
-        var loginSignupViewController = service.tapi.loginSignupViewController()
-        loginSignupViewController.loginSignupDelegate = self
-        loginSignupViewController.view.frame = CGRect(origin: CGPoint(), size: view.frame.size)
-
-        addChild(loginSignupViewController)
-        view.addSubview(loginSignupViewController.view)
-
-        loginSignupViewController.didMove(toParent: self)
-    }
 }
 
-extension TidepoolServiceSetupViewController: TLoginSignupDelegate {
+extension TidepoolServiceSettingsHostController {
     func loginSignupDidComplete(completion: @escaping (Error?) -> Void) {
         service.completeCreate { error in
             guard error == nil else {

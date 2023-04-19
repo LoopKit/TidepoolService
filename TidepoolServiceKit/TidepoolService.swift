@@ -19,17 +19,18 @@ public protocol SessionStorage {
     func getSession(for service: String) throws -> TSession?
 }
 
-public final class TidepoolService: Service, TAPIObserver {
+public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     public static let serviceIdentifier = "TidepoolService"
 
     public static let localizedTitle = LocalizedString("Tidepool", comment: "The title of the Tidepool service")
 
-    public weak var serviceDelegate: ServiceDelegate? {
-        didSet {
-            self.hostIdentifier = serviceDelegate?.hostIdentifier
-            self.hostVersion = serviceDelegate?.hostVersion
-        }
+    public weak var serviceDelegate: ServiceDelegate?
+
+    public func setServiceDelegate(_ delegate: ServiceDelegate) {
+        serviceDelegate = delegate
+        self.hostIdentifier = serviceDelegate?.hostIdentifier
+        self.hostVersion = serviceDelegate?.hostVersion
     }
 
     public lazy var sessionStorage: SessionStorage = KeychainManager()
@@ -62,7 +63,7 @@ public final class TidepoolService: Service, TAPIObserver {
 
     public init(hostIdentifier: String, hostVersion: String, automaticallyFetchEnvironments: Bool = true) {
         self.id = UUID().uuidString
-        self.tapi = TAPI(automaticallyFetchEnvironments: automaticallyFetchEnvironments)
+        self.tapi = TAPI(clientId: "diy-loop", redirectURL: URL(string: "org.loopkit.Loop://tidepool_service_redirect")!, automaticallyFetchEnvironments: automaticallyFetchEnvironments)
         self.hostIdentifier = hostIdentifier
         self.hostVersion = hostVersion
 
@@ -71,16 +72,14 @@ public final class TidepoolService: Service, TAPIObserver {
             tapi.defaultEnvironment = TEnvironment(host: "app.tidepool.org", port: 443)
         }
 
-        tapi.logging = self
-        tapi.addObserver(self)
-    }
-
-    deinit {
-        tapi.removeObserver(self)
+        Task {
+            await tapi.setLogging(self)
+            await tapi.addObserver(self)
+        }
     }
 
     public init?(rawState: RawStateValue) {
-        self.tapi = TAPI()
+        self.tapi = TAPI(clientId: "diy-loop", redirectURL: URL(string: "org.loopkit.Loop://tidepool_service_redirect")!)
         guard let id = rawState["id"] as? String else {
             return nil
         }
@@ -91,13 +90,16 @@ public final class TidepoolService: Service, TAPIObserver {
             self.lastCGMSettingsDatum = (rawState["lastCGMSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TCGMSettingsDatum.self, from: $0) }
             self.lastPumpSettingsDatum = (rawState["lastPumpSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TPumpSettingsDatum.self, from: $0) }
             self.lastPumpSettingsOverrideDeviceEventDatum = (rawState["lastPumpSettingsOverrideDeviceEventDatum"] as? Data).flatMap { try? Self.decoder.decode(TPumpSettingsOverrideDeviceEventDatum.self, from: $0) }
-            tapi.session = try sessionStorage.getSession(for: sessionService)
+            self.session = try sessionStorage.getSession(for: sessionService)
+            Task {
+                await tapi.setSession(session)
+                await tapi.setLogging(self)
+                await tapi.addObserver(self)
+            }
         } catch let error {
             tidepoolKitLog.error("Error initializing TidepoolService %{public}@", error.localizedDescription)
             self.error = error
         }
-        tapi.logging = self
-        tapi.addObserver(self)
     }
 
     public var rawState: RawStateValue {
@@ -113,20 +115,30 @@ public final class TidepoolService: Service, TAPIObserver {
 
     public let isOnboarded = true   // No distinction between created and onboarded
 
-    public func apiDidUpdateSession(_ session: TSession?) {
-        if session == nil {
-            self.dataSetId = nil
-        }
-        do {
-            try sessionStorage.setSession(session, for: sessionService)
-        } catch let error {
-            self.error = error
+    private var session: TSession? {
+        didSet {
+            if session == nil {
+                self.dataSetId = nil
+            }
+            do {
+                try sessionStorage.setSession(session, for: sessionService)
+            } catch let error {
+                self.error = error
+            }
         }
     }
 
+    public func apiDidUpdateSession(_ session: TSession?) {
+        self.session = session
+    }
+
     public func completeCreate(completion: @escaping (Error?) -> Void) {
-        DispatchQueue.global(qos: .background).async {
-            self.getDataSet(completion: completion)
+        Task {
+            do {
+                try await self.getDataSet()
+            } catch {
+                completion(error)
+            }
         }
     }
 
@@ -134,59 +146,46 @@ public final class TidepoolService: Service, TAPIObserver {
         serviceDelegate?.serviceDidUpdateState(self)
     }
 
-    public func completeDelete() {
-        DispatchQueue.global(qos: .background).async {
-            self.tapi.logout() { _ in }
+    public func deleteService() {
+        Task {
+            await self.tapi.logout()
         }
         serviceDelegate?.serviceWantsDeletion(self)
     }
 
-    private func getDataSet(completion: @escaping (Error?) -> Void) {
+    private func getDataSet() async throws {
         guard let clientName = hostIdentifier else {
-            completion(TidepoolServiceError.configuration)
-            return
+            throw TidepoolServiceError.configuration
         }
-        tapi.listDataSets(filter: TDataSet.Filter(clientName: clientName, deleted: false)) { result in
-            switch result {
-            case .failure(let error):
-                completion(error)
-            case .success(let dataSets):
-                if !dataSets.isEmpty {
-                    if dataSets.count > 1 {
-                        self.log.error("Found multiple matching data sets; expected zero or one")
-                    }
-                    self.dataSetId = dataSets.first?.uploadId
-                    completion(nil)
-                } else {
-                    self.createDataSet(completion: completion)
-                }
+
+        let dataSets = try await tapi.listDataSets(filter: TDataSet.Filter(clientName: clientName, deleted: false))
+
+        if !dataSets.isEmpty {
+            if dataSets.count > 1 {
+                self.log.error("Found multiple matching data sets; expected zero or one")
             }
+            self.dataSetId = dataSets.first?.uploadId
+        } else {
+            try await self.createDataSet()
         }
     }
 
-    private func createDataSet(completion: @escaping (Error?) -> Void) {
+    private func createDataSet() async throws {
         guard let clientName = hostIdentifier, let clientVersion = hostVersion else {
-            completion(TidepoolServiceError.configuration)
-            return
+            throw TidepoolServiceError.configuration
         }
+
         let dataSet = TDataSet(client: TDataSet.Client(name: clientName, version: clientVersion),
                                dataSetType: .continuous,
                                deduplicator: TDataSet.Deduplicator(name: .dataSetDeleteOrigin),
                                deviceTags: [.bgm, .cgm, .insulinPump])
-        tapi.createDataSet(dataSet) { result in
-            switch result {
-            case .failure(let error):
-                completion(error)
-            case .success(let dataSet):
-                self.dataSetId = dataSet.uploadId
-                completion(nil)
-            }
-        }
+        let newDataSet = try await tapi.createDataSet(dataSet)
+        self.dataSetId = newDataSet.uploadId
     }
 
     private var sessionService: String { "org.tidepool.TidepoolService.\(id)" }
 
-    private var userId: String? { tapi.session?.userId }
+    private var userId: String? { session?.userId }
 
     private static var encoder: PropertyListEncoder = {
         let encoder = PropertyListEncoder()
@@ -229,7 +228,14 @@ extension TidepoolService: RemoteDataService {
             completion(.failure(TidepoolServiceError.configuration))
             return
         }
-        createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }, completion: completion)
+        Task {
+            do {
+                let result = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                completion(.success(result))
+            } catch {
+                completion(.failure(error))
+            }
+        }
     }
 
     public var carbDataLimit: Int? { return 1000 }
@@ -240,26 +246,14 @@ extension TidepoolService: RemoteDataService {
             return
         }
 
-        createData(created.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }) { result in
-            switch result {
-            case .failure(let error):
+        Task {
+            do {
+                let createdUploaded = try await createData(created.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                let updatedUploaded = try await updateData(updated.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                let deletedUploaded = try await deleteData(withSelectors: deleted.compactMap { $0.selector })
+                completion(.success(createdUploaded || updatedUploaded || deletedUploaded))
+            } catch {
                 completion(.failure(error))
-            case .success(let createdUploaded):
-                self.updateData(updated.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }) { result in
-                    switch result {
-                    case .failure(let error):
-                        completion(.failure(error))
-                    case .success(let updatedUploaded):
-                        self.deleteData(withSelectors: deleted.compactMap { $0.selector }) { result in
-                            switch result {
-                            case .failure(let error):
-                                completion(.failure(error))
-                            case .success(let deletedUploaded):
-                                completion(.success(createdUploaded || updatedUploaded || deletedUploaded))
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -271,19 +265,14 @@ extension TidepoolService: RemoteDataService {
             completion(.failure(TidepoolServiceError.configuration))
             return
         }
-        createData(created.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }) { result in
-            switch result {
-            case .failure(let error):
+
+        Task {
+            do {
+                let createdUploaded = try await createData(created.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                let deletedUploaded = try await deleteData(withSelectors: deleted.flatMap { $0.selectors })
+                completion(.success(createdUploaded || deletedUploaded))
+            } catch {
                 completion(.failure(error))
-            case .success(let createdUploaded):
-                self.deleteData(withSelectors: deleted.flatMap { $0.selectors }) { result in
-                    switch result {
-                    case .failure(let error):
-                        completion(.failure(error))
-                    case .success(let deletedUploaded):
-                        completion(.success(createdUploaded || deletedUploaded))
-                    }
-                }
             }
         }
     }
@@ -295,7 +284,15 @@ extension TidepoolService: RemoteDataService {
             completion(.failure(TidepoolServiceError.configuration))
             return
         }
-        createData(calculateDosingDecisionData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion), completion: completion)
+
+        Task {
+            do {
+                let result = try await createData(calculateDosingDecisionData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
+                completion(.success(result))
+            } catch {
+                completion(.failure(error))
+            }
+        }
     }
 
     func calculateDosingDecisionData(_ stored: [StoredDosingDecision], for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
@@ -351,7 +348,15 @@ extension TidepoolService: RemoteDataService {
             completion(.failure(TidepoolServiceError.configuration))
             return
         }
-        createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }, completion: completion)
+
+        Task {
+            do {
+                let result = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                completion(.success(result))
+            } catch {
+                completion(.failure(error))
+            }
+        }
     }
 
     public var pumpDataEventLimit: Int? { return 1000 }
@@ -361,7 +366,15 @@ extension TidepoolService: RemoteDataService {
             completion(.failure(TidepoolServiceError.configuration))
             return
         }
-        createData(stored.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) }, completion: completion)
+
+        Task {
+            do {
+                let result = try await createData(stored.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+                completion(.success(result))
+            } catch {
+                completion(.failure(error))
+            }
+        }
     }
 
     public var settingsDataLimit: Int? { return 400 }  // Each can be up to 2.5K bytes of serialized JSON, target ~1M or less
@@ -374,24 +387,18 @@ extension TidepoolService: RemoteDataService {
 
         let (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum, lastPumpSettingsOverrideDeviceEventDatum) = calculateSettingsData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
 
-        createData(created) { result in
-            switch result {
-            case .failure(let error):
+        Task {
+            do {
+                let createdUploaded = try await createData(created)
+                let updatedUploaded = try await updateData(updated)
+                self.lastControllerSettingsDatum = lastControllerSettingsDatum
+                self.lastCGMSettingsDatum = lastCGMSettingsDatum
+                self.lastPumpSettingsDatum = lastPumpSettingsDatum
+                self.lastPumpSettingsOverrideDeviceEventDatum = lastPumpSettingsOverrideDeviceEventDatum
+                self.completeUpdate()
+                completion(.success(createdUploaded || updatedUploaded))
+            } catch {
                 completion(.failure(error))
-            case .success(let createdUploaded):
-                self.updateData(updated) { result in
-                    switch result {
-                    case .failure(let error):
-                        completion(.failure(error))
-                    case .success(let updatedUploaded):
-                        self.lastControllerSettingsDatum = lastControllerSettingsDatum
-                        self.lastCGMSettingsDatum = lastCGMSettingsDatum
-                        self.lastPumpSettingsDatum = lastPumpSettingsDatum
-                        self.lastPumpSettingsOverrideDeviceEventDatum = lastPumpSettingsOverrideDeviceEventDatum
-                        self.completeUpdate()
-                        completion(.success(createdUploaded || updatedUploaded))
-                    }
-                }
             }
         }
     }
@@ -494,67 +501,59 @@ extension TidepoolService: RemoteDataService {
         return (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum, lastPumpSettingsOverrideDeviceEventDatum)
     }
 
-    private func createData(_ data: [TDatum], completion: @escaping (Result<Bool, Error>) -> Void) {
+    private func createData(_ data: [TDatum]) async throws -> Bool {
         if let error = error {
-            completion(.failure(error))
-            return
+            throw error
         }
         guard let dataSetId = dataSetId else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        tapi.createData(data, dataSetId: dataSetId) { error in
-            if let error = error {
-                self.log.error("Failed to create data - %{public}@", error.errorDescription!)
-                completion(.failure(error))
-                return
-            }
-            completion(.success(!data.isEmpty))
+        do {
+            try await tapi.createData(data, dataSetId: dataSetId)
+            return !data.isEmpty
+        } catch {
+            self.log.error("Failed to create data - %{public}@", error.localizedDescription)
+            self.log.error("Failed data: %{public}@", String(describing: data))
+            throw error
         }
     }
 
-    private func updateData(_ data: [TDatum], completion: @escaping (Result<Bool, Error>) -> Void) {
+    private func updateData(_ data: [TDatum]) async throws -> Bool {
         if let error = error {
-            completion(.failure(error))
-            return
+            throw error
         }
         guard let dataSetId = dataSetId else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
         // TODO: This implementation is incorrect and will not record the correct history when data is updated. Currently waiting on
         // https://tidepool.atlassian.net/browse/BACK-815 for backend to support new API to capture full history of data changes.
         // This work will be covered in https://tidepool.atlassian.net/browse/LOOP-3943. For now just call createData with the
         // updated data as it will just overwrite the previous data with the updated data.
-        tapi.createData(data, dataSetId: dataSetId) { error in
-            if let error = error {
-                self.log.error("Failed to update data - %{public}@", error.errorDescription!)
-                completion(.failure(error))
-                return
-            }
-            completion(.success(!data.isEmpty))
+        do {
+            try await tapi.createData(data, dataSetId: dataSetId)
+            return !data.isEmpty
+        } catch {
+            self.log.error("Failed to update data - %{public}@", error.localizedDescription)
+            throw error
         }
     }
 
-    private func deleteData(withSelectors selectors: [TDatum.Selector], completion: @escaping (Result<Bool, Error>) -> Void) {
+    private func deleteData(withSelectors selectors: [TDatum.Selector]) async throws -> Bool {
         if let error = error {
-            completion(.failure(error))
-            return
+            throw error
         }
         guard let dataSetId = dataSetId else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        tapi.deleteData(withSelectors: selectors, dataSetId: dataSetId) { error in
-            if let error = error {
-                self.log.error("Failed to delete data - %{public}@", error.errorDescription!)
-                completion(.failure(error))
-                return
-            }
-            completion(.success(!selectors.isEmpty))
+        do {
+            try await tapi.deleteData(withSelectors: selectors, dataSetId: dataSetId)
+            return !selectors.isEmpty
+        } catch {
+            self.log.error("Failed to delete data - %{public}@", error.localizedDescription)
+            throw error
         }
     }
 }
@@ -578,7 +577,7 @@ extension KeychainManager: SessionStorage {
 extension TidepoolServiceError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .configuration: return NSLocalizedString("Configuration Error", comment: "Error string for configuration error")
+        case .configuration: return LocalizedString("Configuration Error", comment: "Error string for configuration error")
         }
     }
 }

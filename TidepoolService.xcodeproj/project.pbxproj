@@ -14,7 +14,7 @@
 		A9151365244E2A9E00116932 /* TidepoolKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9BF371C2418195C008D7F34 /* TidepoolKit.framework */; };
 		A9151366244E2A9E00116932 /* TidepoolKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9BF371C2418195C008D7F34 /* TidepoolKit.framework */; };
 		A9151368244E2A9E00116932 /* TidepoolServiceKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A9DAACFF22E7987800E76C9F /* TidepoolServiceKit.framework */; };
-		A92E770122E9181500591027 /* TidepoolServiceSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92E770022E9181500591027 /* TidepoolServiceSetupViewController.swift */; };
+		A92E770122E9181500591027 /* TidepoolServiceSettingsHostController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A92E770022E9181500591027 /* TidepoolServiceSettingsHostController.swift */; };
 		A9309CA72435987000E02268 /* SyncCarbObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9309CA62435987000E02268 /* SyncCarbObject.swift */; };
 		A9309CAF2436C52900E02268 /* StoredGlucoseSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9309CAE2436C52900E02268 /* StoredGlucoseSample.swift */; };
 		A94AE4E8235A89B5005CA320 /* TidepoolServiceKitPlugin.h in Headers */ = {isa = PBXBuildFile; fileRef = A94AE4E6235A89B5005CA320 /* TidepoolServiceKitPlugin.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -151,7 +151,7 @@
 		1D70C41326F28CC900C62570 /* URLProtocolMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLProtocolMock.swift; sourceTree = "<group>"; };
 		A9057686271F770F0030C3B1 /* IdentifiableDatum.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifiableDatum.swift; sourceTree = "<group>"; };
 		A913B37C24200C97000805C4 /* Bundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bundle.swift; sourceTree = "<group>"; };
-		A92E770022E9181500591027 /* TidepoolServiceSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TidepoolServiceSetupViewController.swift; sourceTree = "<group>"; };
+		A92E770022E9181500591027 /* TidepoolServiceSettingsHostController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TidepoolServiceSettingsHostController.swift; sourceTree = "<group>"; };
 		A9309CA62435987000E02268 /* SyncCarbObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCarbObject.swift; sourceTree = "<group>"; };
 		A9309CAE2436C52900E02268 /* StoredGlucoseSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredGlucoseSample.swift; sourceTree = "<group>"; };
 		A94AE4E4235A89B5005CA320 /* TidepoolServiceKitPlugin.loopplugin */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TidepoolServiceKitPlugin.loopplugin; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -434,10 +434,10 @@
 				A9DAAD6C22E7EA8F00E76C9F /* IdentifiableClass.swift */,
 				A9DAAD6E22E7EA9700E76C9F /* NibLoadable.swift */,
 				A9DAAD3822E7DEE000E76C9F /* TidepoolService+UI.swift */,
-				A92E770022E9181500591027 /* TidepoolServiceSetupViewController.swift */,
+				A92E770022E9181500591027 /* TidepoolServiceSettingsHostController.swift */,
+				C1D0B62829848A460098D215 /* SettingsView.swift */,
 				E93BA06124A29C9C00C5D7E6 /* Assets.xcassets */,
 				A9DAAD4F22E7DFD400E76C9F /* Localizable.strings */,
-				C1D0B62829848A460098D215 /* SettingsView.swift */,
 			);
 			path = TidepoolServiceKitUI;
 			sourceTree = "<group>";
@@ -798,7 +798,7 @@
 				A9DAAD3422E7CA1A00E76C9F /* LocalizedString.swift in Sources */,
 				A9DAAD3922E7DEE000E76C9F /* TidepoolService+UI.swift in Sources */,
 				A9DAAD6F22E7EA9700E76C9F /* NibLoadable.swift in Sources */,
-				A92E770122E9181500591027 /* TidepoolServiceSetupViewController.swift in Sources */,
+				A92E770122E9181500591027 /* TidepoolServiceSettingsHostController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
