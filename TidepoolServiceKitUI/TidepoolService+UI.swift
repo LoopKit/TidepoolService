@@ -9,15 +9,15 @@
 import SwiftUI
 import LoopKit
 import LoopKitUI
+import TidepoolKit
 import TidepoolServiceKit
 
 extension TidepoolService: ServiceUI {
     public static var image: UIImage? {
-        UIImage(named: "Tidepool Logo", in: Bundle(for: TidepoolServiceSettingsHostController.self), compatibleWith: nil)!
+        UIImage(frameworkImage: "Tidepool Logo")
     }
 
     public static func setupViewController(colorPalette: LoopUIColorPalette, pluginHost: PluginHost) -> SetupUIResult<ServiceViewController, ServiceUI> {
-
 
         let navController = ServiceNavigationController()
         navController.isNavigationBarHidden = true
@@ -25,25 +25,18 @@ extension TidepoolService: ServiceUI {
         Task {
             let service = TidepoolService(hostIdentifier: pluginHost.hostIdentifier, hostVersion: pluginHost.hostVersion)
 
-            let tapi = service.tapi
-            let session = await tapi.session
-            let environments = await tapi.environments
-
-            var presentingViewController: UIViewController!
-
-            let settingsView = await SettingsView(session: session, defaultEnvironment: tapi.defaultEnvironment, environments: environments, login: { env throws in
-                try await tapi.login(environment: env, presenting: presentingViewController)
+            let settingsView = await SettingsView(service: service, login: { environment in
+                try await service.tapi.login(environment: environment, presenting: navController)
+                try await service.completeCreate()
                 await navController.notifyServiceCreatedAndOnboarded(service)
+                //await navController.notifyComplete()
             }, dismiss: {
                 Task {
                     await navController.notifyComplete()
                 }
-            }, deleteService: {
-                service.serviceDelegate?.serviceWantsDeletion(service)
             })
 
-            let hostingController = await TidepoolServiceSettingsHostController(rootView: settingsView, service: service)
-            presentingViewController = hostingController
+            let hostingController = await UIHostingController(rootView: settingsView)
             await navController.pushViewController(hostingController, animated: false)
         }
         
@@ -56,23 +49,19 @@ extension TidepoolService: ServiceUI {
         navController.isNavigationBarHidden = true
 
         Task {
-            let session = await tapi.session
-            let environments = await tapi.environments
-
-            var presentingViewController: UIViewController!
-            let view = await SettingsView(session: session, defaultEnvironment: tapi.defaultEnvironment, environments: environments, login: { env throws in
-                try await self.tapi.login(environment: env, presenting: presentingViewController)
+            let settingsView = await SettingsView(service: self, login: { [weak self] environment in
+                if let self {
+                    try await self.tapi.login(environment: environment, presenting: navController)
+                    await navController.notifyServiceCreatedAndOnboarded(self)
+                    //await navController.notifyComplete()
+                }
             }, dismiss: {
                 Task {
                     await navController.notifyComplete()
                 }
-            }, deleteService: {
-                self.serviceDelegate?.serviceWantsDeletion(self)
             })
 
-            let hostingController = await TidepoolServiceSettingsHostController(rootView: view, service: self)
-            presentingViewController = hostingController
-
+            let hostingController = await UIHostingController(rootView: settingsView)
             await navController.pushViewController(hostingController, animated: false)
         }
 

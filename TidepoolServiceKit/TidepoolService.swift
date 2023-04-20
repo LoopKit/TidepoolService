@@ -63,7 +63,7 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     public init(hostIdentifier: String, hostVersion: String, automaticallyFetchEnvironments: Bool = true) {
         self.id = UUID().uuidString
-        self.tapi = TAPI(clientId: "diy-loop", redirectURL: URL(string: "org.loopkit.Loop://tidepool_service_redirect")!, automaticallyFetchEnvironments: automaticallyFetchEnvironments)
+        self.tapi = TAPI(clientId: "diy-loop", redirectURL: URL(string: "org.loopkit.Loop://tidepool_service_redirect")!)
         self.hostIdentifier = hostIdentifier
         self.hostVersion = hostVersion
 
@@ -79,6 +79,7 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
     }
 
     public init?(rawState: RawStateValue) {
+        self.isOnboarded = true // Assume when restoring from state, that we're onboarded
         self.tapi = TAPI(clientId: "diy-loop", redirectURL: URL(string: "org.loopkit.Loop://tidepool_service_redirect")!)
         guard let id = rawState["id"] as? String else {
             return nil
@@ -113,9 +114,9 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         return rawValue
     }
 
-    public let isOnboarded = true   // No distinction between created and onboarded
+    public var isOnboarded = false   // No distinction between created and onboarded
 
-    private var session: TSession? {
+    @Published public var session: TSession? {
         didSet {
             if session == nil {
                 self.dataSetId = nil
@@ -132,14 +133,9 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         self.session = session
     }
 
-    public func completeCreate(completion: @escaping (Error?) -> Void) {
-        Task {
-            do {
-                try await self.getDataSet()
-            } catch {
-                completion(error)
-            }
-        }
+    public func completeCreate() async throws {
+        self.isOnboarded = true
+        try await self.getDataSet()
     }
 
     public func completeUpdate() {

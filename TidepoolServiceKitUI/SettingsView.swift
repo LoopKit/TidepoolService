@@ -8,6 +8,7 @@
 
 import SwiftUI
 import TidepoolKit
+import TidepoolServiceKit
 
 @MainActor
 public struct SettingsView: View {
@@ -15,33 +16,29 @@ public struct SettingsView: View {
     @State private var isEnvironmentActionSheetPresented = false
     @State private var showingDeletionConfirmation = false
 
-    @State private var message = ""
+    @State private var error: Error?
     @State private var isLoggingIn = false
     @State private var selectedEnvironment: TEnvironment
+    @State private var environments: [TEnvironment] = [TEnvironment.productionEnvironment]
+    @State private var environmentFetchError: Error?
 
-    var session: TSession?
-    let environments: [TEnvironment]
-    let login: ((TEnvironment) async throws -> Void)?
-    let dismiss: (() -> Void)?
-    let deleteService: (() -> Void)?
+    @ObservedObject private var service: TidepoolService
+
+    private let login: ((TEnvironment) async throws -> Void)?
+    private let dismiss: (() -> Void)?
 
     var isLoggedIn: Bool {
-        return session != nil
+        return service.session != nil
     }
 
-    public init(
-        session: TSession?,
-        defaultEnvironment: TEnvironment?,
-        environments: [TEnvironment],
-        login: ((TEnvironment) async throws -> Void)?,
-        dismiss: (() -> Void)?,
-        deleteService: (() -> Void)?)
+    public init(service: TidepoolService, login: ((TEnvironment) async throws -> Void)?, dismiss: (() -> Void)?)
     {
-        self._selectedEnvironment = State(initialValue: session?.environment ?? defaultEnvironment ?? environments.first!)
-        self.environments = environments
+        let tapi = service.tapi
+        self.service = service
+        let defaultEnvironment = tapi.defaultEnvironment
+        self._selectedEnvironment = State(initialValue: service.session?.environment ?? defaultEnvironment ?? TEnvironment.productionEnvironment)
         self.login = login
         self.dismiss = dismiss
-        self.deleteService = deleteService
     }
 
     public var body: some View {
@@ -50,7 +47,7 @@ public struct SettingsView: View {
                 .edgesIgnoringSafeArea(.all)
             GeometryReader { geometry in
                 ScrollView {
-                    VStack {
+                    VStack(spacing: 20) {
                         HStack() {
                             Spacer()
                             closeButton
@@ -60,21 +57,32 @@ public struct SettingsView: View {
                         logo
                             .padding(.horizontal, 30)
                             .padding(.bottom)
-                        Text(NSLocalizedString("Environment", comment: "Label title for displaying selected Tidepool server environment."))
-                            .bold()
-                        Text(selectedEnvironment.description)
-                        if isLoggedIn {
-                            Text(NSLocalizedString("You are logged in.", comment: "LoginViewModel description text when logged in"))
-                                .padding()
+                        if selectedEnvironment != TEnvironment.productionEnvironment {
+                            VStack {
+                                Text(NSLocalizedString("Environment", comment: "Label title for displaying selected Tidepool server environment."))
+                                    .bold()
+                                Text(selectedEnvironment.description)
+                            }
+                        }
+                        if let username = service.session?.username {
+                            VStack {
+                                Text(NSLocalizedString("Logged in as", comment: "LoginViewModel description text when logged in"))
+                                    .bold()
+                                Text(username)
+                            }
                         } else {
                             Text(NSLocalizedString("You are not logged in.", comment: "LoginViewModel description text when not logged in"))
                                 .padding()
                         }
 
-                        VStack(alignment: .leading) {
-                            messageView
+                        if let error {
+                            VStack(alignment: .leading) {
+                                Text(error.localizedDescription)
+                                    .font(.callout)
+                                    .foregroundColor(.red)
+                            }
+                            .padding()
                         }
-                        .padding()
                         Spacer()
                         if isLoggedIn {
                             deleteServiceButton
@@ -90,8 +98,15 @@ public struct SettingsView: View {
         .alert(LocalizedString("Are you sure you want to delete this service?", comment: "Confirmation message for deleting a service"), isPresented: $showingDeletionConfirmation)
         {
             Button(LocalizedString("Delete Service", comment: "Button title to delete a service"), role: .destructive) {
-                deleteService?()
+                service.deleteService()
                 dismiss?()
+            }
+        }
+        .task {
+            do {
+                environments = try await TEnvironment.fetchEnvironments()
+            } catch {
+
             }
         }
 
@@ -111,6 +126,7 @@ public struct SettingsView: View {
     private var environmentActionSheet: ActionSheet {
         var buttons: [ActionSheet.Button] = environments.map { environment in
             .default(Text(environment.description)) {
+                error = nil
                 selectedEnvironment = environment
             }
         }
@@ -119,12 +135,6 @@ public struct SettingsView: View {
 
         return ActionSheet(title: Text(NSLocalizedString("Environment", comment: "Tidepool login environment action sheet title")),
                            message: Text(selectedEnvironment.description), buttons: buttons)
-    }
-
-    private var messageView: some View {
-        Text(message)
-            .font(.callout)
-            .foregroundColor(.red)
     }
 
     private var loginButton: some View {
@@ -147,7 +157,7 @@ public struct SettingsView: View {
         Button(action: {
             showingDeletionConfirmation = true
         }) {
-            Text(NSLocalizedString("Logout", comment: "Tidepool logout button title"))
+            Text(NSLocalizedString("Delete Service", comment: "Delete Tidepool service button title"))
         }
         .buttonStyle(ActionButtonStyle(.secondary))
         .disabled(isLoggingIn)
@@ -158,24 +168,18 @@ public struct SettingsView: View {
             return
         }
 
+        error = nil
         isLoggingIn = true
 
         Task {
             do {
                 try await login?(selectedEnvironment)
-                dismiss?()
+                isLoggingIn = false
+                //dismiss?()
             } catch {
-                setError(error)
+                self.error = error
                 isLoggingIn = false
             }
-        }
-    }
-
-    private func setError(_ error: Error?) {
-        if case .requestNotAuthenticated = error as? TError {
-            self.message = NSLocalizedString("Wrong username or password.", comment: "The message for the request not authenticated error")
-        } else {
-            self.message = error?.localizedDescription ?? ""
         }
     }
 
@@ -192,14 +196,8 @@ public struct SettingsView: View {
 }
 
 struct SettingsView_Previews: PreviewProvider {
+    @MainActor
     static var previews: some View {
-        SettingsView(
-            session: nil,
-            defaultEnvironment: nil,
-            environments: [],
-            login: nil,
-            dismiss: nil,
-            deleteService: nil
-        )
+        SettingsView(service: TidepoolService(hostIdentifier: "Previews", hostVersion: "1.0"), login: nil, dismiss: nil)
     }
 }
