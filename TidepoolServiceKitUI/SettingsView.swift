@@ -59,19 +59,31 @@ public struct SettingsView: View {
                             .padding(.bottom)
                         if selectedEnvironment != TEnvironment.productionEnvironment {
                             VStack {
-                                Text(NSLocalizedString("Environment", comment: "Label title for displaying selected Tidepool server environment."))
+                                Text(LocalizedString("Environment", comment: "Label title for displaying selected Tidepool server environment."))
                                     .bold()
                                 Text(selectedEnvironment.description)
+
+                                if isLoggedIn {
+                                    Button(LocalizedString("Revoke token", comment: "Button title to revoke oauth tokens"), action: {
+                                        Task {
+                                            do {
+                                                try await service.tapi.revokeTokens()
+                                            } catch {
+                                                self.error = error
+                                            }
+                                        }
+                                    })
+                                }
                             }
                         }
                         if let username = service.session?.username {
                             VStack {
-                                Text(NSLocalizedString("Logged in as", comment: "LoginViewModel description text when logged in"))
+                                Text(LocalizedString("Logged in as", comment: "LoginViewModel description text when logged in"))
                                     .bold()
                                 Text(username)
                             }
                         } else {
-                            Text(NSLocalizedString("You are not logged in.", comment: "LoginViewModel description text when not logged in"))
+                            Text(LocalizedString("You are not logged in.", comment: "LoginViewModel description text when not logged in"))
                                 .padding()
                         }
 
@@ -134,7 +146,7 @@ public struct SettingsView: View {
         buttons.append(.cancel())
 
 
-        return ActionSheet(title: Text(NSLocalizedString("Environment", comment: "Tidepool login environment action sheet title")),
+        return ActionSheet(title: Text(LocalizedString("Environment", comment: "Tidepool login environment action sheet title")),
                            message: Text(selectedEnvironment.description), buttons: buttons)
     }
 
@@ -146,7 +158,7 @@ public struct SettingsView: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle())
             } else {
-                Text(NSLocalizedString("Login", comment: "Tidepool login button title"))
+                Text(LocalizedString("Login", comment: "Tidepool login button title"))
             }
         }
         .buttonStyle(ActionButtonStyle())
@@ -158,7 +170,7 @@ public struct SettingsView: View {
         Button(action: {
             showingDeletionConfirmation = true
         }) {
-            Text(NSLocalizedString("Delete Service", comment: "Delete Tidepool service button title"))
+            Text(LocalizedString("Delete Service", comment: "Delete Tidepool service button title"))
         }
         .buttonStyle(ActionButtonStyle(.secondary))
         .disabled(isLoggingIn)
@@ -193,7 +205,7 @@ public struct SettingsView: View {
         }
     }
 
-    private var closeButtonTitle: String { NSLocalizedString("Close", comment: "Close navigation button title of an onboarding section page view") }
+    private var closeButtonTitle: String { LocalizedString("Close", comment: "Close navigation button title of an onboarding section page view") }
 }
 
 struct SettingsView_Previews: PreviewProvider {

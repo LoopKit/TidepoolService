@@ -25,12 +25,11 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     public static let localizedTitle = LocalizedString("Tidepool", comment: "The title of the Tidepool service")
 
-    public weak var serviceDelegate: ServiceDelegate?
-
-    public func setServiceDelegate(_ delegate: ServiceDelegate) {
-        serviceDelegate = delegate
-        self.hostIdentifier = serviceDelegate?.hostIdentifier
-        self.hostVersion = serviceDelegate?.hostVersion
+    public weak var serviceDelegate: ServiceDelegate? {
+        didSet {
+            self.hostIdentifier = serviceDelegate?.hostIdentifier
+            self.hostVersion = serviceDelegate?.hostVersion
+        }
     }
 
     public lazy var sessionStorage: SessionStorage = KeychainManager()
@@ -96,10 +95,15 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
                 await tapi.setSession(session)
                 await tapi.setLogging(self)
                 await tapi.addObserver(self)
+
+                if session != nil && dataSetId == nil {
+                    try await getDataSet()
+                }
             }
         } catch let error {
             tidepoolKitLog.error("Error initializing TidepoolService %{public}@", error.localizedDescription)
             self.error = error
+            return nil
         }
     }
 
@@ -116,26 +120,42 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     public var isOnboarded = false   // No distinction between created and onboarded
 
-    @Published public var session: TSession? {
-        didSet {
-            if session == nil {
-                self.dataSetId = nil
-            }
-            do {
-                try sessionStorage.setSession(session, for: sessionService)
-            } catch let error {
-                self.error = error
+    @Published public var session: TSession?
+
+    public func apiDidUpdateSession(_ session: TSession?) {
+        guard session != self.session else {
+            return
+        }
+        self.session = session
+
+        do {
+            try sessionStorage.setSession(session, for: sessionService)
+        } catch let error {
+            self.error = error
+        }
+
+        if session == nil {
+            self.dataSetId = nil
+            let content = Alert.Content(title: LocalizedString("Tidepool Service Authorization", comment: "The title for an alert generated when TidepoolService is no longer authorized."),
+                                        body: LocalizedString("Tidepool service has lost authorization. Please navigate to Tidepool Service settings and reauthenticate.", comment: "The body text for an alert generated when TidepoolService is no longer authorized."),
+                                        acknowledgeActionButtonLabel: LocalizedString("OK", comment: "Alert acknowledgment OK button"))
+            serviceDelegate?.issueAlert(Alert(identifier: Alert.Identifier(managerIdentifier: "TidepoolService",
+                                                                    alertIdentifier: "authentication-needed"),
+                                       foregroundContent: content, backgroundContent: content,
+                                       trigger: .immediate))
+        } else {
+            Task {
+                do {
+                    try await getDataSet()
+                } catch {
+                    self.error = error
+                }
             }
         }
     }
 
-    public func apiDidUpdateSession(_ session: TSession?) {
-        self.session = session
-    }
-
     public func completeCreate() async throws {
         self.isOnboarded = true
-        try await self.getDataSet()
     }
 
     public func completeUpdate() {

@@ -52,8 +52,6 @@ extension TidepoolService: ServiceUI {
             let settingsView = await SettingsView(service: self, login: { [weak self] environment in
                 if let self {
                     try await self.tapi.login(environment: environment, presenting: navController)
-                    await navController.notifyServiceCreatedAndOnboarded(self)
-                    //await navController.notifyComplete()
                 }
             }, dismiss: {
                 Task {
