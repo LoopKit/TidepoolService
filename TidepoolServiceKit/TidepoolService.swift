@@ -12,7 +12,19 @@ import TidepoolKit
 
 public enum TidepoolServiceError: Error {
     case configuration
+    case missingDataSetId
 }
+
+extension TidepoolServiceError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .configuration: return LocalizedString("Configuration Error", comment: "Error string for TidepoolServiceError.configuration")
+        case .missingDataSetId: return LocalizedString("Missing DataSet Id", comment: "Error string for TidepoolServiceError.missingDataSetId")
+        }
+    }
+}
+
+
 
 public protocol SessionStorage {
     func setSession(_ session: TSession?, for service: String) throws
@@ -40,11 +52,6 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     private let id: String
 
-    private var dataSetId: String? {
-        didSet {
-            completeUpdate()
-        }
-    }
 
     private var lastControllerSettingsDatum: TControllerSettingsDatum?
 
@@ -85,7 +92,9 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         }
         do {
             self.id = id
-            self.dataSetId = rawState["dataSetId"] as? String
+            if let dataSetId = rawState["dataSetId"] as? String {
+                self.dataSetIdCacheStatus = .fetched(dataSetId)
+            }
             self.lastControllerSettingsDatum = (rawState["lastControllerSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TControllerSettingsDatum.self, from: $0) }
             self.lastCGMSettingsDatum = (rawState["lastCGMSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TCGMSettingsDatum.self, from: $0) }
             self.lastPumpSettingsDatum = (rawState["lastPumpSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TPumpSettingsDatum.self, from: $0) }
@@ -95,10 +104,6 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
                 await tapi.setSession(session)
                 await tapi.setLogging(self)
                 await tapi.addObserver(self)
-
-                if session != nil && dataSetId == nil {
-                    try await getDataSet()
-                }
             }
         } catch let error {
             tidepoolKitLog.error("Error initializing TidepoolService %{public}@", error.localizedDescription)
@@ -110,7 +115,9 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
     public var rawState: RawStateValue {
         var rawValue: RawStateValue = [:]
         rawValue["id"] = id
-        rawValue["dataSetId"] = dataSetId
+        if case .fetched(let dataSetId) = dataSetIdCacheStatus {
+            rawValue["dataSetId"] = dataSetId
+        }
         rawValue["lastControllerSettingsDatum"] = lastControllerSettingsDatum.flatMap { try? Self.encoder.encode($0) }
         rawValue["lastCGMSettingsDatum"] = lastCGMSettingsDatum.flatMap { try? Self.encoder.encode($0) }
         rawValue["lastPumpSettingsDatum"] = lastPumpSettingsDatum.flatMap { try? Self.encoder.encode($0) }
@@ -126,6 +133,12 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         guard session != self.session else {
             return
         }
+
+        // If userId changed, then current dataSetId is invalid
+        if session?.userId != self.session?.userId {
+            clearCachedDataSetId()
+        }
+
         self.session = session
 
         do {
@@ -135,7 +148,7 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         }
 
         if session == nil {
-            self.dataSetId = nil
+            clearCachedDataSetId()
             let content = Alert.Content(title: LocalizedString("Tidepool Service Authorization", comment: "The title for an alert generated when TidepoolService is no longer authorized."),
                                         body: LocalizedString("Tidepool service has lost authorization. Please navigate to Tidepool Service settings and reauthenticate.", comment: "The body text for an alert generated when TidepoolService is no longer authorized."),
                                         acknowledgeActionButtonLabel: LocalizedString("OK", comment: "Alert acknowledgment OK button"))
@@ -143,14 +156,6 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
                                                                     alertIdentifier: "authentication-needed"),
                                        foregroundContent: content, backgroundContent: content,
                                        trigger: .immediate))
-        } else {
-            Task {
-                do {
-                    try await getDataSet()
-                } catch {
-                    self.error = error
-                }
-            }
         }
     }
 
@@ -169,36 +174,6 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         serviceDelegate?.serviceWantsDeletion(self)
     }
 
-    private func getDataSet() async throws {
-        guard let clientName = hostIdentifier else {
-            throw TidepoolServiceError.configuration
-        }
-
-        let dataSets = try await tapi.listDataSets(filter: TDataSet.Filter(clientName: clientName, deleted: false))
-
-        if !dataSets.isEmpty {
-            if dataSets.count > 1 {
-                self.log.error("Found multiple matching data sets; expected zero or one")
-            }
-            self.dataSetId = dataSets.first?.uploadId
-        } else {
-            try await self.createDataSet()
-        }
-    }
-
-    private func createDataSet() async throws {
-        guard let clientName = hostIdentifier, let clientVersion = hostVersion else {
-            throw TidepoolServiceError.configuration
-        }
-
-        let dataSet = TDataSet(client: TDataSet.Client(name: clientName, version: clientVersion),
-                               dataSetType: .continuous,
-                               deduplicator: TDataSet.Deduplicator(name: .dataSetDeleteOrigin),
-                               deviceTags: [.bgm, .cgm, .insulinPump])
-        let newDataSet = try await tapi.createDataSet(dataSet)
-        self.dataSetId = newDataSet.uploadId
-    }
-
     private var sessionService: String { "org.tidepool.TidepoolService.\(id)" }
 
     private var userId: String? { session?.userId }
@@ -210,6 +185,81 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
     }()
 
     private static var decoder = PropertyListDecoder()
+
+    // MARK: - DataSetId
+
+    enum DataSetIdCacheStatus {
+        case inProgress(Task<String, Error>)
+        case fetched(String)
+    }
+
+    private var dataSetIdCacheStatus: DataSetIdCacheStatus?
+
+    private func clearCachedDataSetId() {
+        dataSetIdCacheStatus = nil
+    }
+
+    // This is the main accessor for data set id. It will trigger a fetch or creation
+    // of the Loop data set associated with the currently logged in account, and will
+    // handle caching and minimizing the number of network requests.
+    public func getCachedDataSetId() async throws -> String {
+        if let fetchStatus = dataSetIdCacheStatus {
+            switch fetchStatus {
+            case .fetched(let dataSetId):
+                return dataSetId
+            case .inProgress(let task):
+                return try await task.value
+            }
+        }
+
+        let task: Task<String, Error> = Task {
+            return try await fetchDataSetId()
+        }
+
+        dataSetIdCacheStatus = .inProgress(task)
+        let dataSetId = try await task.value
+        dataSetIdCacheStatus = .fetched(dataSetId)
+        return dataSetId
+    }
+
+    private func fetchDataSetId() async throws -> String {
+        guard let clientName = hostIdentifier else {
+            throw TidepoolServiceError.configuration
+        }
+
+        let dataSets = try await tapi.listDataSets(filter: TDataSet.Filter(clientName: clientName, deleted: false))
+
+        if !dataSets.isEmpty {
+            if dataSets.count > 1 {
+                self.log.error("Found multiple matching data sets; expected zero or one")
+            }
+
+            guard let dataSetId = dataSets.first?.uploadId else {
+                throw TidepoolServiceError.missingDataSetId
+            }
+            return dataSetId
+        } else {
+            let dataSet = try await self.createDataSet()
+            guard let dataSetId = dataSet.id else {
+                throw TidepoolServiceError.missingDataSetId
+            }
+            return dataSetId
+        }
+    }
+
+    private func createDataSet() async throws -> TDataSet {
+        guard let clientName = hostIdentifier, let clientVersion = hostVersion else {
+            throw TidepoolServiceError.configuration
+        }
+
+        let dataSet = TDataSet(client: TDataSet.Client(name: clientName, version: clientVersion),
+                               dataSetType: .continuous,
+                               deduplicator: TDataSet.Deduplicator(name: .dataSetDeleteOrigin),
+                               deviceTags: [.bgm, .cgm, .insulinPump])
+
+        return try await tapi.createDataSet(dataSet)
+    }
+
 }
 
 extension TidepoolService: TLogging {
@@ -521,9 +571,8 @@ extension TidepoolService: RemoteDataService {
         if let error = error {
             throw error
         }
-        guard let dataSetId = dataSetId else {
-            throw TidepoolServiceError.configuration
-        }
+
+        let dataSetId = try await getCachedDataSetId()
 
         do {
             try await tapi.createData(data, dataSetId: dataSetId)
@@ -539,9 +588,8 @@ extension TidepoolService: RemoteDataService {
         if let error = error {
             throw error
         }
-        guard let dataSetId = dataSetId else {
-            throw TidepoolServiceError.configuration
-        }
+
+        let dataSetId = try await getCachedDataSetId()
 
         // TODO: This implementation is incorrect and will not record the correct history when data is updated. Currently waiting on
         // https://tidepool.atlassian.net/browse/BACK-815 for backend to support new API to capture full history of data changes.
@@ -560,9 +608,8 @@ extension TidepoolService: RemoteDataService {
         if let error = error {
             throw error
         }
-        guard let dataSetId = dataSetId else {
-            throw TidepoolServiceError.configuration
-        }
+
+        let dataSetId = try await getCachedDataSetId()
 
         do {
             try await tapi.deleteData(withSelectors: selectors, dataSetId: dataSetId)
@@ -587,14 +634,6 @@ extension KeychainManager: SessionStorage {
     public func getSession(for service: String) throws -> TSession? {
         let sessionData = try getGenericPasswordForServiceAsData(service)
         return try JSONDecoder.tidepool.decode(TSession.self, from: sessionData)
-    }
-}
-
-extension TidepoolServiceError: LocalizedError {
-    public var errorDescription: String? {
-        switch self {
-        case .configuration: return LocalizedString("Configuration Error", comment: "Error string for configuration error")
-        }
     }
 }
 
