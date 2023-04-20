@@ -116,6 +116,7 @@ public struct SettingsView: View {
         Image(frameworkImage: "Tidepool Logo", decorative: true)
             .resizable()
             .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: 150)
             .onLongPressGesture(minimumDuration: 2) {
                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 isEnvironmentActionSheetPresented = true
