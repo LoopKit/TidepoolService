@@ -130,8 +130,10 @@ public struct SettingsView: View {
             .aspectRatio(contentMode: .fit)
             .frame(maxWidth: 150)
             .onLongPressGesture(minimumDuration: 2) {
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                isEnvironmentActionSheetPresented = true
+                if !isLoggedIn {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                    isEnvironmentActionSheetPresented = true
+                }
             }
             .actionSheet(isPresented: $isEnvironmentActionSheetPresented) { environmentActionSheet }
     }
