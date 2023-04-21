@@ -150,7 +150,7 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         if session == nil {
             clearCachedDataSetId()
             let content = Alert.Content(title: LocalizedString("Tidepool Service Authorization", comment: "The title for an alert generated when TidepoolService is no longer authorized."),
-                                        body: LocalizedString("Tidepool service has lost authorization. Please navigate to Tidepool Service settings and reauthenticate.", comment: "The body text for an alert generated when TidepoolService is no longer authorized."),
+                                        body: LocalizedString("Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate.", comment: "The body text for an alert generated when TidepoolService is no longer authorized."),
                                         acknowledgeActionButtonLabel: LocalizedString("OK", comment: "Alert acknowledgment OK button"))
             serviceDelegate?.issueAlert(Alert(identifier: Alert.Identifier(managerIdentifier: "TidepoolService",
                                                                     alertIdentifier: "authentication-needed"),
