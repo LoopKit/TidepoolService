@@ -468,9 +468,12 @@ extension TidepoolService: RemoteDataService {
             let controllerSettingsDatumIsEffectivelyEquivalent = TControllerSettingsDatum.areEffectivelyEquivalent(old: lastControllerSettingsDatum, new: controllerSettingsDatum)
 
             let cgmSettingsDatum = $0.datumCGMSettings(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+            cgmSettingsDatum.serialNumber = nil // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
             let cgmSettingsDatumIsEffectivelyEquivalent = TCGMSettingsDatum.areEffectivelyEquivalent(old: lastCGMSettingsDatum, new: cgmSettingsDatum)
 
             let pumpSettingsDatum = $0.datumPumpSettings(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+            pumpSettingsDatum.serialNumber = nil // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
+            pumpSettingsDatum.automatedDelivery = nil // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
             let pumpSettingsDatumIsEffectivelyEquivalent = TPumpSettingsDatum.areEffectivelyEquivalent(old: lastPumpSettingsDatum, new: pumpSettingsDatum)
 
             // Associate the data
@@ -640,7 +643,7 @@ extension TCGMSettingsDatum: EffectivelyEquivalent {
             self.manufacturers == other.manufacturers &&
             self.model == other.model &&
             self.name == other.name &&
-            self.serialNumber == other.serialNumber &&
+//            self.serialNumber == other.serialNumber && // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
             self.softwareVersion == other.softwareVersion &&
             self.transmitterId == other.transmitterId &&
             self.units == other.units &&
@@ -676,7 +679,7 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
     // All TDatum properties can be ignored for this datum type
     func isEffectivelyEquivalent(to other: TPumpSettingsDatum) -> Bool {
         return self.activeScheduleName == other.activeScheduleName &&
-            self.automatedDelivery == other.automatedDelivery &&
+//            self.automatedDelivery == other.automatedDelivery && // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
             self.basal == other.basal &&
             self.basalRateSchedule == other.basalRateSchedule &&
             self.basalRateSchedules == other.basalRateSchedules &&
@@ -700,7 +703,7 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
             self.name == other.name &&
             self.overridePresets == other.overridePresets &&
             self.scheduleTimeZoneOffset == other.scheduleTimeZoneOffset &&
-            self.serialNumber == other.serialNumber &&
+//            self.serialNumber == other.serialNumber && // MARK: Planned for removal in https://tidepool.atlassian.net/browse/LOOP-5130
             self.softwareVersion == other.softwareVersion &&
             self.units == other.units
     }
