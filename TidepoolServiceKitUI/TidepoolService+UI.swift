@@ -29,12 +29,12 @@ enum TidepoolServiceError: Error {
     case missingWindow
 }
 
-extension TidepoolService: ServiceUI {
+extension TidepoolService: @retroactive ServiceUI {
     public static var image: UIImage? {
         UIImage(frameworkImage: "Tidepool Logo")
     }
 
-    public static func setupViewController(colorPalette: LoopUIColorPalette, pluginHost: PluginHost) -> SetupUIResult<ServiceViewController, ServiceUI> {
+    public static func setupViewController(pluginHost: PluginHost, onboarding: Bool, allowDebugFeatures: Bool) -> SetupUIResult<ServiceViewController, ServiceUI> {
 
         let navController = ServiceNavigationController()
         navController.isNavigationBarHidden = true
@@ -48,7 +48,7 @@ extension TidepoolService: ServiceUI {
                     throw TidepoolServiceError.missingWindow
                 }
 
-                let windowContextProvider = WindowContextProvider(window: window)
+                let windowContextProvider = await WindowContextProvider(window: window)
                 let sessionProvider = await ASWebAuthenticationSessionProvider(contextProviding: windowContextProvider)
                 let auth = OAuth2Authenticator(api: service.tapi, environment: environment, sessionProvider: sessionProvider)
                 try await auth.login()
@@ -58,16 +58,20 @@ extension TidepoolService: ServiceUI {
                 Task {
                     await navController.notifyComplete()
                 }
-            })
+            }, onboarding: onboarding).environment(\.allowDebugFeatures, allowDebugFeatures)
 
             let hostingController = await UIHostingController(rootView: settingsView)
             await navController.pushViewController(hostingController, animated: false)
         }
-        
+
         return .userInteractionRequired(navController)
     }
 
-    public func settingsViewController(colorPalette: LoopUIColorPalette) -> ServiceViewController {
+    public static func setupViewController(colorPalette: LoopUIColorPalette, pluginHost: PluginHost, allowDebugFeatures: Bool) -> SetupUIResult<ServiceViewController, ServiceUI> {
+        return setupViewController(pluginHost: pluginHost, onboarding: false, allowDebugFeatures: allowDebugFeatures)
+    }
+
+    public func settingsViewController(colorPalette: LoopUIColorPalette, allowDebugFeatures: Bool) -> ServiceViewController {
 
         let navController = ServiceNavigationController()
         navController.isNavigationBarHidden = true
@@ -79,7 +83,7 @@ extension TidepoolService: ServiceUI {
                         throw TidepoolServiceError.missingWindow
                     }
 
-                    let windowContextProvider = WindowContextProvider(window: window)
+                    let windowContextProvider = await WindowContextProvider(window: window)
                     let sessionProvider = await ASWebAuthenticationSessionProvider(contextProviding: windowContextProvider)
                     let auth = OAuth2Authenticator(api: self.tapi, environment: environment, sessionProvider: sessionProvider)
                     try await auth.login()
@@ -88,7 +92,7 @@ extension TidepoolService: ServiceUI {
                 Task {
                     await navController.notifyComplete()
                 }
-            })
+            }, onboarding: false).environment(\.allowDebugFeatures, allowDebugFeatures)
 
             let hostingController = await UIHostingController(rootView: settingsView)
             await navController.pushViewController(hostingController, animated: false)

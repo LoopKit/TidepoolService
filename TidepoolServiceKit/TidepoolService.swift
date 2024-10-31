@@ -32,8 +32,10 @@ public protocol SessionStorage {
 }
 
 public final class TidepoolService: Service, TAPIObserver, ObservableObject {
-
-    public static let pluginIdentifier = "TidepoolService"
+    
+    public static let serviceIdentifier: String = "TidepoolService"
+    
+    public var pluginIdentifier: String { Self.serviceIdentifier }
 
     public static let localizedTitle = LocalizedString("Tidepool", comment: "The title of the Tidepool service")
 
@@ -46,14 +48,21 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
     
     public weak var stateDelegate: StatefulPluggableDelegate?
 
+    public weak var remoteDataServiceDelegate: RemoteDataServiceDelegate? {
+        didSet {
+            Task {
+                await setDeviceLogUploaderDelegate()
+            }
+        }
+    }
+    
     public lazy var sessionStorage: SessionStorage = KeychainManager()
 
     public let tapi: TAPI = TAPI(clientId: BuildDetails.default.tidepoolServiceClientId, redirectURL: BuildDetails.default.tidepoolServiceRedirectURL)
 
-    public private (set) var error: Error?
+    public private(set) var error: Error?
 
     private let id: String
-
 
     private var lastControllerSettingsDatum: TControllerSettingsDatum?
 
@@ -61,13 +70,19 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
 
     private var lastPumpSettingsDatum: TPumpSettingsDatum?
 
-    private var lastPumpSettingsOverrideDeviceEventDatum: TPumpSettingsOverrideDeviceEventDatum?
-
     private var hostIdentifier: String?
     private var hostVersion: String?
 
-    private let log = OSLog(category: pluginIdentifier)
+    private let log = OSLog(category: "TidepoolService")
     private let tidepoolKitLog = OSLog(category: "TidepoolKit")
+
+    private var deviceLogUploader: DeviceLogUploader?
+    
+    public var isDependency: Bool = false
+
+    private func setDeviceLogUploaderDelegate() async {
+        await deviceLogUploader?.setDelegate(remoteDataServiceDelegate)
+    }
 
     public init(hostIdentifier: String, hostVersion: String) {
         self.id = UUID().uuidString
@@ -75,9 +90,15 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         self.hostVersion = hostVersion
 
         Task {
-            await tapi.setLogging(self)
-            await tapi.addObserver(self)
+           await finishSetup()
         }
+    }
+
+    public func finishSetup() async {
+        await tapi.setLogging(self)
+        await tapi.addObserver(self)
+        deviceLogUploader = DeviceLogUploader(api: tapi)
+        await setDeviceLogUploaderDelegate()
     }
 
     public init?(rawState: RawStateValue) {
@@ -93,12 +114,10 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
             self.lastControllerSettingsDatum = (rawState["lastControllerSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TControllerSettingsDatum.self, from: $0) }
             self.lastCGMSettingsDatum = (rawState["lastCGMSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TCGMSettingsDatum.self, from: $0) }
             self.lastPumpSettingsDatum = (rawState["lastPumpSettingsDatum"] as? Data).flatMap { try? Self.decoder.decode(TPumpSettingsDatum.self, from: $0) }
-            self.lastPumpSettingsOverrideDeviceEventDatum = (rawState["lastPumpSettingsOverrideDeviceEventDatum"] as? Data).flatMap { try? Self.decoder.decode(TPumpSettingsOverrideDeviceEventDatum.self, from: $0) }
             self.session = try sessionStorage.getSession(for: sessionService)
             Task {
                 await tapi.setSession(session)
-                await tapi.setLogging(self)
-                await tapi.addObserver(self)
+                await finishSetup()
             }
         } catch let error {
             tidepoolKitLog.error("Error initializing TidepoolService %{public}@", error.localizedDescription)
@@ -116,11 +135,14 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
         rawValue["lastControllerSettingsDatum"] = lastControllerSettingsDatum.flatMap { try? Self.encoder.encode($0) }
         rawValue["lastCGMSettingsDatum"] = lastCGMSettingsDatum.flatMap { try? Self.encoder.encode($0) }
         rawValue["lastPumpSettingsDatum"] = lastPumpSettingsDatum.flatMap { try? Self.encoder.encode($0) }
-        rawValue["lastPumpSettingsOverrideDeviceEventDatum"] = lastPumpSettingsOverrideDeviceEventDatum.flatMap { try? Self.encoder.encode($0) }
         return rawValue
     }
 
     public var isOnboarded = false   // No distinction between created and onboarded
+    
+    public func markAsDepedency(_ isDependency: Bool) {
+        self.isDependency = isDependency
+    }
 
     @Published public var session: TSession?
 
@@ -277,83 +299,85 @@ extension TidepoolService: TLogging {
 
 extension TidepoolService: RemoteDataService {
 
-    public func uploadTemporaryOverrideData(updated: [TemporaryScheduleOverride], deleted: [TemporaryScheduleOverride], completion: @escaping (Result<Bool, Error>) -> Void) {
-        // TODO: Implement
-        completion(.success(true))
+    public func uploadTemporaryOverrideData(updated: [TemporaryScheduleOverride], deleted: [TemporaryScheduleOverride]) async throws {
+        guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
+            throw TidepoolServiceError.configuration
+        }
+
+        let _ = try await createData(updated.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+        let _ = try await deleteData(withSelectors: deleted.flatMap { $0.selectors })
     }
 
     public var alertDataLimit: Int? { return 1000 }
 
-    public func uploadAlertData(_ stored: [SyncAlertObject], completion: @escaping (_ result: Result<Bool, Error>) -> Void) {
+    public func uploadAlertData(_ stored: [SyncAlertObject]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
-        Task {
-            do {
-                let result = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                completion(.success(result))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+
+        let _ = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
     }
 
     public var carbDataLimit: Int? { return 1000 }
 
-    public func uploadCarbData(created: [SyncCarbObject], updated: [SyncCarbObject], deleted: [SyncCarbObject], completion: @escaping (Result<Bool, Error>) -> Void) {
+    public func uploadCarbData(created: [SyncCarbObject], updated: [SyncCarbObject], deleted: [SyncCarbObject]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        Task {
-            do {
-                let createdUploaded = try await createData(created.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                let updatedUploaded = try await updateData(updated.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                let deletedUploaded = try await deleteData(withSelectors: deleted.compactMap { $0.selector })
-                completion(.success(createdUploaded || updatedUploaded || deletedUploaded))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        let _ = try await createData(created.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+        let _ = try await updateData(updated.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+        let _ = try await deleteData(withSelectors: deleted.compactMap { $0.selector })
     }
 
     public var doseDataLimit: Int? { return 1000 }
 
-    public func uploadDoseData(created: [DoseEntry], deleted: [DoseEntry], completion: @escaping (_ result: Result<Bool, Error>) -> Void) {
+    private func annotateDoses(_ doses: [DoseEntry]) async throws -> [DoseEntry] {
+        guard !doses.isEmpty else {
+            return []
+        }
+
+        guard let remoteDataServiceDelegate else {
+            throw TidepoolServiceError.configuration
+        }
+
+        let start = doses.map { $0.startDate }.min()!
+        let end = doses.map { $0.endDate }.max()!
+
+        let basal = try await remoteDataServiceDelegate.getBasalHistory(startDate: start, endDate: end)
+        let dosesWithBasal = doses.annotated(with: basal)
+
+        let automationHistory = try await remoteDataServiceDelegate.automationHistory(from: start, to: end)
+        return dosesWithBasal.overlayAutomationHistory(automationHistory)
+
+    }
+
+    public func uploadDoseData(created: [DoseEntry], deleted: [DoseEntry]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
+            throw TidepoolServiceError.configuration
+        }
+
+        guard !created.isEmpty || !deleted.isEmpty else {
             return
         }
 
-        Task {
-            do {
-                let createdUploaded = try await createData(created.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                let deletedUploaded = try await deleteData(withSelectors: deleted.flatMap { $0.selectors })
-                completion(.success(createdUploaded || deletedUploaded))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        // Syncidentifiers may be changed
+        let annotatedCreated = try await annotateDoses(created)
+        let _ = try await createData(annotatedCreated.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
+
+        // annotating these so we get the correct syncIdentifiers to delete
+        let annotatedDeleted = try await annotateDoses(deleted)
+        let _ = try await deleteData(withSelectors: annotatedDeleted.flatMap { $0.selectors })
     }
 
     public var dosingDecisionDataLimit: Int? { return 50 }  // Each can be up to 20K bytes of serialized JSON, target ~1M or less
 
-    public func uploadDosingDecisionData(_ stored: [StoredDosingDecision], completion: @escaping (_ result: Result<Bool, Error>) -> Void) {
+    public func uploadDosingDecisionData(_ stored: [StoredDosingDecision]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        Task {
-            do {
-                let result = try await createData(calculateDosingDecisionData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
-                completion(.success(result))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        let _ = try await createData(calculateDosingDecisionData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
     }
 
     func calculateDosingDecisionData(_ stored: [StoredDosingDecision], for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
@@ -404,79 +428,47 @@ extension TidepoolService: RemoteDataService {
 
     public var glucoseDataLimit: Int? { return 1000 }
 
-    public func uploadGlucoseData(_ stored: [StoredGlucoseSample], completion: @escaping (Result<Bool, Error>) -> Void) {
+    public func uploadGlucoseData(_ stored: [StoredGlucoseSample]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        Task {
-            do {
-                let result = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                completion(.success(result))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        let _ = try await createData(stored.compactMap { $0.datum(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
     }
 
     public var pumpDataEventLimit: Int? { return 1000 }
 
-    public func uploadPumpEventData(_ stored: [PersistedPumpEvent], completion: @escaping (_ result: Result<Bool, Error>) -> Void) {
+    public func uploadPumpEventData(_ stored: [PersistedPumpEvent]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        Task {
-            do {
-                let result = try await createData(stored.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
-                completion(.success(result))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        let _ = try await createData(stored.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
     }
 
     public var settingsDataLimit: Int? { return 400 }  // Each can be up to 2.5K bytes of serialized JSON, target ~1M or less
 
-    public func uploadSettingsData(_ stored: [StoredSettings], completion: @escaping (_ result: Result<Bool, Error>) -> Void) {
+    public func uploadSettingsData(_ stored: [StoredSettings]) async throws {
         guard let userId = userId, let hostIdentifier = hostIdentifier, let hostVersion = hostVersion else {
-            completion(.failure(TidepoolServiceError.configuration))
-            return
+            throw TidepoolServiceError.configuration
         }
 
-        let (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum, lastPumpSettingsOverrideDeviceEventDatum) = calculateSettingsData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+        let (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum) = calculateSettingsData(stored, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
 
-        Task {
-            do {
-                let createdUploaded = try await createData(created)
-                let updatedUploaded = try await updateData(updated)
-                self.lastControllerSettingsDatum = lastControllerSettingsDatum
-                self.lastCGMSettingsDatum = lastCGMSettingsDatum
-                self.lastPumpSettingsDatum = lastPumpSettingsDatum
-                self.lastPumpSettingsOverrideDeviceEventDatum = lastPumpSettingsOverrideDeviceEventDatum
-                self.completeUpdate()
-                completion(.success(createdUploaded || updatedUploaded))
-            } catch {
-                completion(.failure(error))
-            }
-        }
+        let _ = try await createData(created)
+        let _ = try await updateData(updated)
+        self.lastControllerSettingsDatum = lastControllerSettingsDatum
+        self.lastCGMSettingsDatum = lastCGMSettingsDatum
+        self.lastPumpSettingsDatum = lastPumpSettingsDatum
+        self.completeUpdate()
     }
 
-    func calculateSettingsData(_ stored: [StoredSettings], for userId: String, hostIdentifier: String, hostVersion: String) -> ([TDatum], [TDatum], TControllerSettingsDatum?, TCGMSettingsDatum?, TPumpSettingsDatum?, TPumpSettingsOverrideDeviceEventDatum?) {
+    func calculateSettingsData(_ stored: [StoredSettings], for userId: String, hostIdentifier: String, hostVersion: String) -> ([TDatum], [TDatum], TControllerSettingsDatum?, TCGMSettingsDatum?, TPumpSettingsDatum?) {
         var created: [TDatum] = []
-        var updated: [TDatum] = []
+        let updated: [TDatum] = []
         var lastControllerSettingsDatum = lastControllerSettingsDatum
         var lastCGMSettingsDatum = lastCGMSettingsDatum
         var lastPumpSettingsDatum = lastPumpSettingsDatum
-        var lastPumpSettingsOverrideDeviceEventDatum = lastPumpSettingsOverrideDeviceEventDatum
-
-        // A StoredSettings can generate a TPumpSettingsDatum and an optional TPumpSettingsOverrideDeviceEventDatum if there is an
-        // enabled override. Only upload the TPumpSettingsDatum or TPumpSettingsOverrideDeviceEventDatum if they have CHANGED.
-        // If the TPumpSettingsOverrideDeviceEventDatum has changed, then also re-upload the previous uploaded
-        // TPumpSettingsOverrideDeviceEventDatum with an updated duration and potentially expected duration, but only if the
-        // duration is calculated to be ended early.
 
         stored.forEach {
 
@@ -491,15 +483,11 @@ extension TidepoolService: RemoteDataService {
             let pumpSettingsDatum = $0.datumPumpSettings(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
             let pumpSettingsDatumIsEffectivelyEquivalent = TPumpSettingsDatum.areEffectivelyEquivalent(old: lastPumpSettingsDatum, new: pumpSettingsDatum)
 
-            let pumpSettingsOverrideDeviceEventDatum = $0.datumPumpSettingsOverrideDeviceEvent(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
-            let pumpSettingsOverrideDeviceEventDatumIsEffectivelyEquivalent = TPumpSettingsOverrideDeviceEventDatum.areEffectivelyEquivalent(old: lastPumpSettingsOverrideDeviceEventDatum, new: pumpSettingsOverrideDeviceEventDatum)
-
             // Associate the data
 
             var controllerSettingsAssociations: [TAssociation] = []
             var cgmSettingsAssociations: [TAssociation] = []
             var pumpSettingsAssociations: [TAssociation] = []
-            var pumpSettingsOverrideDeviceEventAssociations: [TAssociation] = []
 
             if let controllerSettingsDatum = controllerSettingsDatumIsEffectivelyEquivalent ? lastControllerSettingsDatum : controllerSettingsDatum {
                 let association = TAssociation(type: .datum, id: controllerSettingsDatum.id!, reason: "controllerSettings")
@@ -515,13 +503,11 @@ extension TidepoolService: RemoteDataService {
                 let association = TAssociation(type: .datum, id: pumpSettingsDatum.id!, reason: "pumpSettings")
                 controllerSettingsAssociations.append(association)
                 cgmSettingsAssociations.append(association)
-                pumpSettingsOverrideDeviceEventAssociations.append(association)
             }
 
             controllerSettingsDatum.append(associations: controllerSettingsAssociations)
             cgmSettingsDatum.append(associations: cgmSettingsAssociations)
             pumpSettingsDatum.append(associations: pumpSettingsAssociations)
-            pumpSettingsOverrideDeviceEventDatum?.append(associations: pumpSettingsOverrideDeviceEventAssociations)
 
             // Upload and update the data, if necessary
 
@@ -539,27 +525,9 @@ extension TidepoolService: RemoteDataService {
                 created.append(pumpSettingsDatum)
                 lastPumpSettingsDatum = pumpSettingsDatum
             }
-
-            if !pumpSettingsOverrideDeviceEventDatumIsEffectivelyEquivalent {
-
-                // If we need to update the duration of the last override, then do so
-                if let lastPumpSettingsOverrideDeviceEventDatum = lastPumpSettingsOverrideDeviceEventDatum,
-                   lastPumpSettingsOverrideDeviceEventDatum.updateDuration(basedUpon: pumpSettingsOverrideDeviceEventDatum?.time ?? pumpSettingsDatum.time) {
-
-                    // If it isn't already being created, then update it
-                    if !created.contains(where: { $0 === lastPumpSettingsOverrideDeviceEventDatum }) {
-                        updated.append(lastPumpSettingsOverrideDeviceEventDatum)
-                    }
-                }
-
-                if let pumpSettingsOverrideDeviceEventDatum = pumpSettingsOverrideDeviceEventDatum {
-                    created.append(pumpSettingsOverrideDeviceEventDatum)
-                }
-                lastPumpSettingsOverrideDeviceEventDatum = pumpSettingsOverrideDeviceEventDatum
-            }
         }
 
-        return (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum, lastPumpSettingsOverrideDeviceEventDatum)
+        return (created, updated, lastControllerSettingsDatum, lastCGMSettingsDatum, lastPumpSettingsDatum)
     }
 
     private func createData(_ data: [TDatum]) async throws -> Bool {
@@ -615,9 +583,8 @@ extension TidepoolService: RemoteDataService {
         }
     }
 
-    public func uploadCgmEventData(_ stored: [LoopKit.PersistedCgmEvent], completion: @escaping (Result<Bool, Error>) -> Void) {
+    public func uploadCgmEventData(_ stored: [PersistedCgmEvent]) async throws {
         // TODO: Upload sensor/transmitter changes
-        completion(.success(false))
     }
 
     public func remoteNotificationWasReceived(_ notification: [String: AnyObject]) async throws {
@@ -683,7 +650,6 @@ extension TCGMSettingsDatum: EffectivelyEquivalent {
             self.manufacturers == other.manufacturers &&
             self.model == other.model &&
             self.name == other.name &&
-            self.serialNumber == other.serialNumber &&
             self.softwareVersion == other.softwareVersion &&
             self.transmitterId == other.transmitterId &&
             self.units == other.units &&
@@ -702,7 +668,6 @@ extension TCGMSettingsDatum: EffectivelyEquivalent {
             manufacturers == nil &&
             model == nil &&
             name == nil &&
-            serialNumber == nil &&
             softwareVersion == nil &&
             transmitterId == nil &&
             defaultAlerts == nil &&
@@ -719,7 +684,6 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
     // All TDatum properties can be ignored for this datum type
     func isEffectivelyEquivalent(to other: TPumpSettingsDatum) -> Bool {
         return self.activeScheduleName == other.activeScheduleName &&
-            self.automatedDelivery == other.automatedDelivery &&
             self.basal == other.basal &&
             self.basalRateSchedule == other.basalRateSchedule &&
             self.basalRateSchedules == other.basalRateSchedules &&
@@ -743,7 +707,6 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
             self.name == other.name &&
             self.overridePresets == other.overridePresets &&
             self.scheduleTimeZoneOffset == other.scheduleTimeZoneOffset &&
-            self.serialNumber == other.serialNumber &&
             self.softwareVersion == other.softwareVersion &&
             self.units == other.units
     }
@@ -751,7 +714,6 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
     // Ignore units as they are always specified
     var isEffectivelyEmpty: Bool {
         return activeScheduleName == nil &&
-            automatedDelivery == nil &&
             basal == nil &&
             basalRateSchedule == nil &&
             basalRateSchedules == nil &&
@@ -775,55 +737,7 @@ extension TPumpSettingsDatum: EffectivelyEquivalent {
             name == nil &&
             overridePresets == nil &&
             scheduleTimeZoneOffset == nil &&
-            serialNumber == nil &&
             softwareVersion == nil
-    }
-}
-
-extension TPumpSettingsOverrideDeviceEventDatum: EffectivelyEquivalent {
-
-    // All TDatum properties can be ignored EXCEPT time for this datum type
-    // Time is gather from the actual scheduled override and NOT the StoredSettings so it is valid and necessary for comparison
-    func isEffectivelyEquivalent(to other: TPumpSettingsOverrideDeviceEventDatum) -> Bool {
-        return self.time == other.time &&
-            self.overrideType == other.overrideType &&
-            self.overridePreset == other.overridePreset &&
-            self.method == other.method &&
-            self.duration == other.duration &&
-            self.expectedDuration == other.expectedDuration &&
-            self.bloodGlucoseTarget == other.bloodGlucoseTarget &&
-            self.basalRateScaleFactor == other.basalRateScaleFactor &&
-            self.carbohydrateRatioScaleFactor == other.carbohydrateRatioScaleFactor &&
-            self.insulinSensitivityScaleFactor == other.insulinSensitivityScaleFactor &&
-            self.units == other.units
-    }
-
-    var isEffectivelyEmpty: Bool {
-        return overrideType == nil &&
-            overridePreset == nil &&
-            method == nil &&
-            duration == nil &&
-            expectedDuration == nil &&
-            bloodGlucoseTarget == nil &&
-            basalRateScaleFactor == nil &&
-            carbohydrateRatioScaleFactor == nil &&
-            insulinSensitivityScaleFactor == nil &&
-            units == nil
-    }
-
-    func updateDuration(basedUpon endTime: Date?) -> Bool {
-        guard let endTime = endTime, let time = time, endTime > time else {
-            return false
-        }
-
-        let updatedDuration = time.distance(to: endTime)
-        guard duration == nil || updatedDuration < duration! else {
-            return false
-        }
-
-        self.expectedDuration = duration
-        self.duration = updatedDuration
-        return true
     }
 }
 

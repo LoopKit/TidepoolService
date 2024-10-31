@@ -21,8 +21,6 @@ import TidepoolKit
  - preMealTargetRange               ClosedRange<HKQuantity>?                TPumpSettingsDatum.bloodGlucoseTargetPreprandial
  - workoutTargetRange               ClosedRange<HKQuantity>?                TPumpSettingsDatum.bloodGlucoseTargetPhysicalActivity
  - overridePresets                  [TemporaryScheduleOverridePreset]?      TPumpSettingsDatum.overridePresets
- - scheduleOverride                 TemporaryScheduleOverride?              TPumpSettingsOverrideDeviceEventDatum.*
- - preMealOverride                  TemporaryScheduleOverride?              TPumpSettingsOverrideDeviceEventDatum.*
  - maximumBasalRatePerHour          Double?                                 TPumpSettingsDatum.basal.rateMaximum.value
  - maximumBolus                     Double?                                 TPumpSettingsDatum.bolus.amountMaximum.value
  - suspendThreshold                 GlucoseThreshold?                       TPumpSettingsDatum.bloodGlucoseSafetyLimit
@@ -38,7 +36,6 @@ import TidepoolKit
  - syncIdentifier                   UUID                                    .id, .origin, .payload["syncIdentifier"]
  
  Notes:
- - The active override (scheduleOverride or preMealOverride) are stored in TPumpSettingsOverrideDeviceEventDatum.
  - Assumes same time zone for basalRateSchedule, glucoseTargetRangeSchedule, carbRatioSchedule, insulinSensitivitySchedule.
  - StoredSettings.notificationSettings.carPlaySetting is not included as it is unneeded by backend.
  - StoredSettings.notificationSettings.showPreviewsSetting is not included as it is unneeded by backend.
@@ -68,7 +65,6 @@ extension StoredSettings: IdentifiableDatum {
                                       manufacturers: datumCGMManufacturers,
                                       model: datumCGMModel,
                                       name: datumCGMName,
-                                      serialNumber: datumCGMSerialNumber,
                                       softwareVersion: datumCGMSoftwareVersion,
                                       transmitterId: nil,       // TODO: https://tidepool.atlassian.net/browse/LOOP-3929
                                       units: datumCGMUnits,
@@ -85,7 +81,6 @@ extension StoredSettings: IdentifiableDatum {
     func datumPumpSettings(for userId: String, hostIdentifier: String, hostVersion: String) -> TPumpSettingsDatum {
         let datum = TPumpSettingsDatum(time: datumTime,
                                        activeScheduleName: datumPumpActiveScheduleName,
-                                       automatedDelivery: datumPumpAutomatedDelivery,
                                        basal: datumPumpBasal,
                                        basalRateSchedules: datumPumpBasalRateSchedules,
                                        bloodGlucoseSafetyLimit: datumPumpBloodGlucoseSafetyLimit,
@@ -105,7 +100,6 @@ extension StoredSettings: IdentifiableDatum {
                                        name: datumPumpName,
                                        overridePresets: datumPumpOverridePresets,
                                        scheduleTimeZoneOffset: datumPumpScheduleTimeZoneOffset,
-                                       serialNumber: datumPumpSerialNumber,
                                        softwareVersion: datumPumpSoftwareVersion,
                                        units: datumPumpUnits)
         let origin = datumOrigin(for: resolvedIdentifier(for: TPumpSettingsDatum.self), hostIdentifier: hostIdentifier, hostVersion: hostVersion)
@@ -116,29 +110,6 @@ extension StoredSettings: IdentifiableDatum {
                                origin: origin)
     }
     
-    func datumPumpSettingsOverrideDeviceEvent(for userId: String, hostIdentifier: String, hostVersion: String) -> TPumpSettingsOverrideDeviceEventDatum? {
-        guard let activeOverride = activeOverride else {
-            return nil
-        }
-        let datum = TPumpSettingsOverrideDeviceEventDatum(time: activeOverride.datumTime,
-                                                          overrideType: activeOverride.datumOverrideType,
-                                                          overridePreset: activeOverride.datumOverridePreset,
-                                                          method: activeOverride.datumMethod,
-                                                          duration: activeOverride.datumDuration,
-                                                          expectedDuration: activeOverride.datumExpectedDuration,
-                                                          bloodGlucoseTarget: activeOverride.datumBloodGlucoseTarget,
-                                                          basalRateScaleFactor: activeOverride.datumBasalRateScaleFactor,
-                                                          carbohydrateRatioScaleFactor: activeOverride.datumCarbohydrateRatioScaleFactor,
-                                                          insulinSensitivityScaleFactor: activeOverride.datumInsulinSensitivityScaleFactor,
-                                                          units: activeOverride.datumUnits)
-        let origin = datumOrigin(for: resolvedIdentifier(for: TPumpSettingsOverrideDeviceEventDatum.self), hostIdentifier: hostIdentifier, hostVersion: hostVersion)
-        return datum.adornWith(id: datumId(for: userId, type: TPumpSettingsOverrideDeviceEventDatum.self),
-                               timeZone: datumTimeZone,
-                               timeZoneOffset: datumTimeZoneOffset,
-                               payload: datumPayload,
-                               origin: origin)
-    }
-
     var syncIdentifierAsString: String { syncIdentifier.uuidString }
 
     private var datumTime: Date { date }
@@ -171,8 +142,6 @@ extension StoredSettings: IdentifiableDatum {
 
     private var datumCGMName: String? { cgmDevice?.name }
 
-    private var datumCGMSerialNumber: String? { cgmDevice?.localIdentifier }
-
     private var datumCGMSoftwareVersion: String? { cgmDevice?.softwareVersion }
 
     private var datumCGMUnits: TCGMSettingsDatum.Units { .milligramsPerDeciliter }
@@ -180,8 +149,6 @@ extension StoredSettings: IdentifiableDatum {
     private var datumPumpActiveScheduleName: String? {
         return Self.activeScheduleNameDefault
     }
-    
-    private var datumPumpAutomatedDelivery: Bool { dosingEnabled }
     
     private var datumPumpBasal: TPumpSettingsDatum.Basal? {
         guard let maximumBasalRatePerHour = maximumBasalRatePerHour else {
@@ -304,7 +271,7 @@ extension StoredSettings: IdentifiableDatum {
     private var datumPumpName: String? { pumpDevice?.name }
 
     private var datumPumpOverridePresets: [String: TPumpSettingsDatum.OverridePreset]? {
-        guard let overridePresets = overridePresets, !overridePresets.isEmpty else {
+        guard !overridePresets.isEmpty else {
             return nil
         }
         return overridePresets.reduce(into: [:]) { $0[$1.name] = $1.datum }
@@ -319,8 +286,6 @@ extension StoredSettings: IdentifiableDatum {
         return TimeInterval(seconds: scheduleTimeZone.secondsFromGMT(for: date))
     }
 
-    private var datumPumpSerialNumber: String? { pumpDevice?.localIdentifier }
-
     private var datumPumpSoftwareVersion: String? { pumpDevice?.softwareVersion }
     
     private var datumPumpUnits: TPumpSettingsDatum.Units {
@@ -333,19 +298,6 @@ extension StoredSettings: IdentifiableDatum {
         return dictionary
     }
     
-    private var activeOverride: TemporaryScheduleOverride? {
-        switch (preMealOverride, scheduleOverride) {
-        case (let preMealOverride?, nil):
-            return preMealOverride
-        case (nil, let scheduleOverride?):
-            return scheduleOverride
-        case (let preMealOverride?, let scheduleOverride?):
-            return preMealOverride.scheduledEndDate > date ? preMealOverride : scheduleOverride
-        case (nil, nil):
-            return nil
-        }
-    }
-
     public static var activeScheduleNameDefault: String { "Default" }
 }
 
@@ -427,80 +379,6 @@ fileprivate extension TemporaryScheduleOverridePreset {
     var datumAbbreviation: String? { symbol }
     
     var datumDuration: TimeInterval? { duration.isFinite ? duration.timeInterval : nil }
-}
-
-fileprivate extension TemporaryScheduleOverride {
-    var datumTime: Date { startDate }
-
-    var datumOverrideType: TPumpSettingsOverrideDeviceEventDatum.OverrideType { context.datumOverrideType }
-    
-    var datumOverridePreset: String? {
-        guard case .preset(let preset) = context else {
-            return nil
-        }
-        return preset.name
-    }
-    
-    var datumMethod: TPumpSettingsOverrideDeviceEventDatum.Method? { .manual }
-    
-    var datumDuration: TimeInterval? {
-        switch duration {
-        case .finite(let interval):
-            return interval
-        case .indefinite:
-            return nil
-        }
-    }
-    
-    var datumExpectedDuration: TimeInterval? { nil }
-    
-    var datumBloodGlucoseTarget: TPumpSettingsOverrideDeviceEventDatum.BloodGlucoseTarget? { settings.datumBloodGlucoseTarget }
-    
-    var datumBasalRateScaleFactor: Double? { settings.datumBasalRateScaleFactor }
-    
-    var datumCarbohydrateRatioScaleFactor: Double? { settings.datumCarbohydrateRatioScaleFactor }
-    
-    var datumInsulinSensitivityScaleFactor: Double? { settings.datumInsulinSensitivityScaleFactor }
-
-    var datumUnits: TPumpSettingsOverrideDeviceEventDatum.Units? { settings.datumUnits }
-}
-
-fileprivate extension TemporaryScheduleOverride.Context {
-    var datumOverrideType: TPumpSettingsOverrideDeviceEventDatum.OverrideType {
-        switch self {
-        case .preMeal:
-            return .preprandial
-        case .legacyWorkout:
-            return .physicalActivity
-        case .preset(_):
-            return .preset
-        case .custom:
-            return .custom
-        }
-    }
-}
-
-fileprivate extension TemporaryScheduleOverrideSettings {
-    var datumBloodGlucoseTarget: TPumpSettingsDatum.BloodGlucoseTarget? {
-        guard let targetRange = targetRange else {
-            return nil
-        }
-        return TPumpSettingsDatum.BloodGlucoseTarget(low: targetRange.lowerBound.doubleValue(for: .milligramsPerDeciliter),
-                                                     high: targetRange.upperBound.doubleValue(for: .milligramsPerDeciliter))
-    }
-    
-    var datumBasalRateScaleFactor: Double? { basalRateMultiplier }
-    
-    var datumCarbohydrateRatioScaleFactor: Double? { carbRatioMultiplier }
-    
-    var datumInsulinSensitivityScaleFactor: Double? { insulinSensitivityMultiplier }
-
-    var datumUnits: TPumpSettingsOverrideDeviceEventDatum.Units? {
-        guard targetRange != nil else {
-            return nil
-        }
-        return TPumpSettingsOverrideDeviceEventDatum.Units(bloodGlucose: .milligramsPerDeciliter)
-    }
 }
 
 extension TCGMSettingsDatum: TypedDatum {
