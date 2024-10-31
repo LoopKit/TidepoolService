@@ -357,6 +357,10 @@ extension TidepoolService: RemoteDataService {
             throw TidepoolServiceError.configuration
         }
 
+        guard !created.isEmpty || !deleted.isEmpty else {
+            return
+        }
+
         // Syncidentifiers may be changed
         let annotatedCreated = try await annotateDoses(created)
         let _ = try await createData(annotatedCreated.flatMap { $0.data(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion) })
