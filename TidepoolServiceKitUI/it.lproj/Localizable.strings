@@ -5,7 +5,7 @@
 "Close" = "Chiudi";
 
 /* Button title to delete a service */
-"Delete Service" = "Elimina Servizio";
+"Delete Service" = "Elimina servizio";
 
 /* Label title for displaying selected Tidepool server environment.
 Tidepool login environment action sheet title */
