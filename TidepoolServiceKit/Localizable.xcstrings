@@ -124,12 +124,6 @@
             "value" : "Lỗi cấu hình"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Configuration Error"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -261,12 +255,6 @@
             "value" : "Thiếu Id bộ dữ liệu"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Missing DataSet Id"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -395,12 +383,6 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OK"
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
             "value" : "OK"
           }
         },
@@ -535,12 +517,6 @@
             "value" : "Tidepool"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -672,12 +648,6 @@
             "value" : "Ủy quyền dịch vụ Tidepool"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool Service Authorization"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -807,12 +777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dịch vụ Tidepool không còn được ủy quyền. Vui lòng vào cài đặt Dịch vụ Tidepool và xác thực lại."
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
           }
         },
         "zh-Hans" : {

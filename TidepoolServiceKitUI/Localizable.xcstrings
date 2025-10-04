@@ -124,12 +124,6 @@
             "value" : "Bạn có chắc là bạn muốn xóa bỏ dịch vụ này?"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Are you sure you want to delete this service?"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -259,12 +253,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đóng"
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Close"
           }
         },
         "zh-Hans" : {
@@ -398,12 +386,6 @@
             "value" : "Xóa dịch vụ"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Delete Service"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -533,12 +515,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Môi trường"
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Environment"
           }
         },
         "zh-Hans" : {
@@ -672,12 +648,6 @@
             "value" : "Đăng nhập với"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Logged in as"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -807,12 +777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đăng nhập"
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Login"
           }
         },
         "zh-Hans" : {
@@ -946,12 +910,6 @@
             "value" : "Thu hồi token"
           }
         },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Revoke token"
-          }
-        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "new",
@@ -1081,12 +1039,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bạn chưa đăng nhập."
-          }
-        },
-        "yy-YY" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "You are not logged in."
           }
         },
         "zh-Hans" : {
