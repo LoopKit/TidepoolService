@@ -227,8 +227,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Missing DataSet Id"
+            "state" : "translated",
+            "value" : "Chýbajúce ID dátového súboru"
           }
         },
         "sv" : {
@@ -489,7 +489,7 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Tidepool"
           }
         },
@@ -620,8 +620,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool Service Authorization"
+            "state" : "translated",
+            "value" : "Autorizácia služby Tidepool"
           }
         },
         "sv" : {
@@ -751,8 +751,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
+            "state" : "translated",
+            "value" : "Služba Tidepool už nie je autorizovaná. Prejdite do nastavení služby Tidepool a znovu sa overte."
           }
         },
         "sv" : {

@@ -489,8 +489,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Environment"
+            "state" : "translated",
+            "value" : "Prostredie"
           }
         },
         "sv" : {
@@ -620,8 +620,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Logged in as"
+            "state" : "translated",
+            "value" : "Prihlásený ako"
           }
         },
         "sv" : {
@@ -882,8 +882,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Revoke token"
+            "state" : "translated",
+            "value" : "Zrušiť token"
           }
         },
         "sv" : {
@@ -1013,8 +1013,8 @@
         },
         "sk" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "You are not logged in."
+            "state" : "translated",
+            "value" : "Nie ste prihlásený."
           }
         },
         "sv" : {
