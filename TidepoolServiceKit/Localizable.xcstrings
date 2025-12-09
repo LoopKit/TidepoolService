@@ -88,6 +88,12 @@
             "value" : "Configuration Error"
           }
         },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Configuration Error"
+          }
+        },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
@@ -214,6 +220,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Missing DataSet Id"
+          }
+        },
+        "ro" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "Missing DataSet Id"
@@ -350,6 +362,12 @@
             "value" : "OK"
           }
         },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "OK"
+          }
+        },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
@@ -476,6 +494,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tidepool"
+          }
+        },
+        "ro" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "Tidepool"
@@ -612,6 +636,12 @@
             "value" : "Tidepool Service Authorization"
           }
         },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tidepool Service Authorization"
+          }
+        },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
@@ -738,6 +768,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
+          }
+        },
+        "ro" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
