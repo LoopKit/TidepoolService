@@ -90,8 +90,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Are you sure you want to delete this service?"
+            "state" : "translated",
+            "value" : "Sunteți sigur/ă că vreți să ștergeți acest serviciu?"
           }
         },
         "ru" : {
@@ -406,8 +406,8 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Delete Service"
+            "state" : "translated",
+            "value" : "删除服务"
           }
         }
       }
@@ -721,8 +721,8 @@
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Login"
+            "state" : "translated",
+            "value" : "Connexion"
           }
         },
         "he" : {

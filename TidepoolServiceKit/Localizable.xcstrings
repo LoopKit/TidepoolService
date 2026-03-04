@@ -407,7 +407,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ok"
+            "value" : "OK"
           }
         }
       }
@@ -703,8 +703,8 @@
         },
         "de" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
+            "state" : "translated",
+            "value" : "Der Tidepool-Dienst ist nicht mehr autorisiert. Bitte rufe die Einstellungen des Tidepool-Dienstes auf und authentifiziere Dich erneut."
           }
         },
         "es" : {
@@ -817,8 +817,8 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Tidepool service is no longer authorized. Please navigate to Tidepool Service settings and reauthenticate."
+            "state" : "translated",
+            "value" : "Tidepool 服务已失去授权。请前往 Tidepool 服务设置并重新进行身份验证。"
           }
         }
       }
