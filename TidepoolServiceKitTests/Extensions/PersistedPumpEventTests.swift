@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-import HealthKit
+import LoopAlgorithm
 import LoopKit
 @testable import TidepoolServiceKit
 
@@ -256,10 +256,11 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:25:23Z")!,
                                                            value: 0.75,
                                                            unit: .units,
+                                                           decisionId: nil,
                                                            deliveredUnits: nil,
                                                            description: "Test Basal Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
-                                                           scheduledBasalRate: HKQuantity(unit: .internationalUnitsPerHour, doubleValue: 2.0),
+                                                           scheduledBasalRate: LoopQuantity(unit: .internationalUnitsPerHour, doubleValue: 2.0),
                                                            insulinType: .novolog,
                                                            automatic: true,
                                                            manuallyEntered: false),
@@ -286,6 +287,7 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                                            value: 4.25,
                                                            unit: .units,
+                                                           decisionId: nil,
                                                            deliveredUnits: 3.5,
                                                            description: "Test Bolus Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -665,10 +667,11 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                                            value: 1.5,
                                                            unit: .unitsPerHour,
+                                                           decisionId: nil,
                                                            deliveredUnits: 0.5,
                                                            description: "Test Temp Basal Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
-                                                           scheduledBasalRate: HKQuantity(unit: .internationalUnitsPerHour, doubleValue: 2.0),
+                                                           scheduledBasalRate: LoopQuantity(unit: .internationalUnitsPerHour, doubleValue: 2.0),
                                                            insulinType: .fiasp,
                                                            automatic: true,
                                                            manuallyEntered: false),

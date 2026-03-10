@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import HealthKit
+import LoopAlgorithm
 import TidepoolKit
 import LoopKit
 @testable import TidepoolServiceKit
@@ -19,7 +19,7 @@ class StoredGlucoseSampleTests: XCTestCase {
                                          syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
                                          syncVersion: 1,
                                          startDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
-                                         quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 123),
+                                         quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 123),
                                          condition: nil,
                                          trend: nil,
                                          trendRate: nil,
@@ -57,7 +57,7 @@ class StoredGlucoseSampleTests: XCTestCase {
                                          syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
                                          syncVersion: 2,
                                          startDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
-                                         quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 167),
+                                         quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 167),
                                          condition: nil,
                                          trend: nil,
                                          trendRate: nil,
@@ -95,10 +95,10 @@ class StoredGlucoseSampleTests: XCTestCase {
                                          syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
                                          syncVersion: 3,
                                          startDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
-                                         quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 123),
+                                         quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 123),
                                          condition: nil,
                                          trend: .flat,
-                                         trendRate: HKQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 0.1),
+                                         trendRate: LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 0.1),
                                          isDisplayOnly: false,
                                          wasUserEntered: false,
                                          device: nil,
@@ -119,7 +119,7 @@ class StoredGlucoseSampleTests: XCTestCase {
   },
   "time" : "2020-01-02T03:00:23.000Z",
   "trend" : "constant",
-  "trendRate" : 0.10000000000000001,
+  "trendRate" : 0.1,
   "type" : "cbg",
   "units" : "mg/dL",
   "value" : 123
@@ -134,10 +134,10 @@ class StoredGlucoseSampleTests: XCTestCase {
                                          syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
                                          syncVersion: 4,
                                          startDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
-                                         quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 40.0),
+                                         quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 40.0),
                                          condition: .belowRange,
                                          trend: .down,
-                                         trendRate: HKQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: -1.0),
+                                         trendRate: LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: -1.0),
                                          isDisplayOnly: false,
                                          wasUserEntered: false,
                                          device: nil,
@@ -180,10 +180,10 @@ class StoredGlucoseSampleTests: XCTestCase {
                                          syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
                                          syncVersion: 5,
                                          startDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
-                                         quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 400.0),
+                                         quantity: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: 400.0),
                                          condition: .aboveRange,
                                          trend: .upUp,
-                                         trendRate: HKQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0),
+                                         trendRate: LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: 4.0),
                                          isDisplayOnly: false,
                                          wasUserEntered: false,
                                          device: nil,
