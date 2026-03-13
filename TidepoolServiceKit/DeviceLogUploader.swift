@@ -7,8 +7,9 @@
 //
 
 import Foundation
-import os.log
+import LoopAlgorithm
 import LoopKit
+import os.log
 import TidepoolKit
 
 /// Periodically uploads device logs in hourly chunks to backend
