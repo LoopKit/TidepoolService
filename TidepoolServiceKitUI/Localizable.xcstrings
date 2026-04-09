@@ -293,6 +293,9 @@
         }
       }
     },
+    "Continue" : {
+      "comment" : "Delete Tidepool service button title"
+    },
     "Delete Service" : {
       "comment" : "Button title to delete a service\nDelete Tidepool service button title",
       "localizations" : {
