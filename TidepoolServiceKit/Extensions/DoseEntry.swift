@@ -9,7 +9,6 @@
 import LoopAlgorithm
 import LoopKit
 import TidepoolKit
-import LoopAlgorithm
 
 /*
  DoseEntry
