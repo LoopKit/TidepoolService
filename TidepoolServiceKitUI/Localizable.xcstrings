@@ -91,7 +91,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sunteți sigur/ă că vreți să ștergeți acest serviciu?"
+            "value" : "Sunteți sigur că vreți să ștergeți acest serviciu?"
           }
         },
         "ru" : {
@@ -227,8 +227,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Close"
+            "state" : "translated",
+            "value" : "Închideți"
           }
         },
         "ru" : {
@@ -364,8 +364,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Delete Service"
+            "state" : "translated",
+            "value" : "Ștergeți serviciul"
           }
         },
         "ru" : {
@@ -912,8 +912,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Revoke token"
+            "state" : "translated",
+            "value" : "Revocați jeton"
           }
         },
         "ru" : {
@@ -1049,8 +1049,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "You are not logged in."
+            "state" : "translated",
+            "value" : "Nu sunteți autentificat."
           }
         },
         "ru" : {

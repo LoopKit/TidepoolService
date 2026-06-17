@@ -90,8 +90,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Configuration Error"
+            "state" : "translated",
+            "value" : "Eroare configurare"
           }
         },
         "ru" : {
