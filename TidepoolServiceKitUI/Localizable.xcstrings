@@ -43,7 +43,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer ce service?"
+            "value" : "Voulez-vous vraiment supprimer ce service ?"
           }
         },
         "he" : {
@@ -979,7 +979,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Revocați jeton"
+            "value" : "Revocați cheie"
           }
         },
         "ru" : {
