@@ -10,12 +10,6 @@
             "value" : "Are you sure you want to delete this service?"
           }
         },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opravdu chcete tuto službu smazat?"
-          }
-        },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
@@ -54,7 +48,7 @@
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Are you sure you want to delete this service?"
           }
         },
@@ -62,12 +56,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sei sicuro di voler eliminare questo servizio?"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Er du sikker på at du vil slette denne tjenesten?"
           }
         },
         "nb-NO" : {
@@ -191,8 +179,8 @@
         },
         "he" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "סגור"
+            "state" : "new",
+            "value" : "Close"
           }
         },
         "hu" : {
@@ -204,13 +192,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chiudi"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lukk"
+            "value" : "Fine"
           }
         },
         "nb-NO" : {
@@ -302,12 +284,6 @@
             "value" : "Delete Service"
           }
         },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Smazat službu"
-          }
-        },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
@@ -346,7 +322,7 @@
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Delete Service"
           }
         },
@@ -354,18 +330,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elimina Servizio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete Service"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Slett tjeneste"
           }
         },
         "nb-NO" : {
@@ -394,7 +358,7 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Delete Service"
           }
         },
@@ -437,7 +401,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete Service"
+            "value" : "Xóa dịch vụ"
           }
         },
         "zh-Hans" : {
@@ -453,7 +417,7 @@
       "localizations" : {
         "ar" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
@@ -471,13 +435,13 @@
         },
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
         "fi" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
@@ -489,13 +453,13 @@
         },
         "he" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
@@ -503,12 +467,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ambiente"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Miljø"
           }
         },
         "nb-NO" : {
@@ -537,26 +495,26 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mediu"
+            "state" : "new",
+            "value" : "Environment"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Environment"
+            "value" : "Prostredie"
           }
         },
         "sv" : {
@@ -567,7 +525,7 @@
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         },
@@ -585,7 +543,7 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Environment"
           }
         }
@@ -596,7 +554,7 @@
       "localizations" : {
         "ar" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
@@ -614,13 +572,13 @@
         },
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
         "fi" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
@@ -632,13 +590,13 @@
         },
         "he" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
@@ -646,12 +604,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autenticato come"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Innlogget som"
           }
         },
         "nb-NO" : {
@@ -680,14 +632,14 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autentificat ca"
+            "state" : "new",
+            "value" : "Logged in as"
           }
         },
         "ru" : {
@@ -699,7 +651,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Logged in as"
+            "value" : "Prihlásený ako"
           }
         },
         "sv" : {
@@ -710,7 +662,7 @@
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Logged in as"
           }
         },
@@ -743,15 +695,9 @@
             "value" : "Login"
           }
         },
-        "cs" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Přihlásit se"
-          }
-        },
         "da" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Login"
           }
         },
@@ -787,20 +733,14 @@
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Login"
           }
         },
         "it" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Login"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Logg Inn"
           }
         },
         "nb-NO" : {
@@ -817,7 +757,7 @@
         },
         "pl" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Login"
           }
         },
@@ -835,8 +775,8 @@
         },
         "ro" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autentificare"
+            "state" : "new",
+            "value" : "Login"
           }
         },
         "ru" : {
@@ -888,7 +828,7 @@
       "localizations" : {
         "ar" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
@@ -906,13 +846,13 @@
         },
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
         "fi" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
@@ -924,13 +864,13 @@
         },
         "he" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
@@ -938,12 +878,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Revoca token"
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tilbakekall token"
           }
         },
         "nb-NO" : {
@@ -972,7 +906,7 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
@@ -991,7 +925,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Revoke token"
+            "value" : "Zrušiť token"
           }
         },
         "sv" : {
@@ -1002,7 +936,7 @@
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         },
@@ -1020,7 +954,7 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "Revoke token"
           }
         }
@@ -1031,7 +965,7 @@
       "localizations" : {
         "ar" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
@@ -1049,13 +983,13 @@
         },
         "es" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
         "fi" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
@@ -1067,13 +1001,13 @@
         },
         "he" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
         "hu" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
@@ -1081,12 +1015,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non sei autenticato."
-          }
-        },
-        "nb" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du er ikke innlogget."
           }
         },
         "nb-NO" : {
@@ -1115,7 +1043,7 @@
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
@@ -1134,7 +1062,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You are not logged in."
+            "value" : "Nie ste prihlásený."
           }
         },
         "sv" : {
@@ -1145,7 +1073,7 @@
         },
         "tr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "new",
             "value" : "You are not logged in."
           }
         },
