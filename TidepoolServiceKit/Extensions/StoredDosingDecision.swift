@@ -35,7 +35,7 @@ import TidepoolKit
  - manualBolusRequested            Double?                              TDosingDecisionDatum.requestedBolus
  - warnings                        [Issue]                              TDosingDecisionDatum.warnings
  - errors                          [Issue]                              TDosingDecisionDatum.errors
- - algorithmExperiments            AlgorithmExperiments?                TDosingDecisionDatum.payload["algorithmExperiments"]
+ - algorithmExperiments            [AlgorithmExperiment]?               TDosingDecisionDatum.payload["algorithmExperiments"]
  - syncIdentifier                  UUID                                 .id, .origin, .payload["syncIdentifier"]
 
  Notes:
@@ -280,14 +280,7 @@ extension StoredDosingDecision: IdentifiableDatum {
 
     private var datumDosingDecisionPayload: TDictionary {
         var dictionary = datumPayload
-        if let algorithmExperiments {
-            var experiments: [String: Any] = [
-                "integralRetrospectiveCorrection": algorithmExperiments.integralRetrospectiveCorrection,
-                "glucoseBasedApplicationFactor": algorithmExperiments.glucoseBasedApplicationFactor
-            ]
-            experiments["applicationFactor"] = algorithmExperiments.applicationFactor
-            dictionary["algorithmExperiments"] = experiments
-        }
+        dictionary["algorithmExperiments"] = algorithmExperiments?.map { $0.jsonObject }
         return dictionary
     }
 }
