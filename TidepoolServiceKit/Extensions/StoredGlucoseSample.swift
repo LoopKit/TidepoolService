@@ -98,8 +98,8 @@ extension StoredGlucoseSample: IdentifiableHKDatum {
         dictionary["syncVersion"] = syncVersion
         if isBackfill {
             dictionary["isBackfill"] = true
-            dictionary["receivedTime"] = receivedDate.map { ISO8601DateFormatter().string(from: $0) }
         }
+        dictionary["receivedTime"] = receivedDate.map { ISO8601DateFormatter().string(from: $0) }
         return !dictionary.isEmpty ? dictionary : nil
     }
 }
