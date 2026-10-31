@@ -160,6 +160,7 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
             clearCachedDataSetId()
         }
 
+        let wasLoggedOut = self.session == nil
         self.session = session
 
         do {
@@ -176,16 +177,22 @@ public final class TidepoolService: Service, TAPIObserver, ObservableObject {
             Task {
                 await serviceDelegate?.issueAlert(
                     Alert(
-                        identifier: Alert
-                            .Identifier(managerIdentifier: pluginIdentifier,
-                                        alertIdentifier: "authentication-needed"),
+                        identifier: authenticationNeededAlertIdentifier,
                         foregroundContent: content,
                         backgroundContent: content,
                         trigger: .immediate
                     )
                 )
             }
+        } else if wasLoggedOut {
+            Task {
+                await serviceDelegate?.retractAlert(identifier: authenticationNeededAlertIdentifier)
+            }
         }
+    }
+
+    private var authenticationNeededAlertIdentifier: Alert.Identifier {
+        Alert.Identifier(managerIdentifier: pluginIdentifier, alertIdentifier: "authentication-needed")
     }
 
     public func completeCreate() async throws {
@@ -615,7 +622,12 @@ extension KeychainManager: SessionStorage {
     }
 
     public func getSession(for service: String) throws -> TSession? {
-        let sessionData = try getGenericPasswordForServiceAsData(service)
+        let sessionData: Data
+        do {
+            sessionData = try getGenericPasswordForServiceAsData(service)
+        } catch KeychainManagerError.copy(errSecItemNotFound) {
+            return nil
+        }
         return try JSONDecoder.tidepool.decode(TSession.self, from: sessionData)
     }
 }
