@@ -10,7 +10,6 @@ import XCTest
 import HealthKit
 import LoopKit
 import TidepoolKit
-import LoopAlgorithm
 @testable import TidepoolServiceKit
 
 class StoredDosingDecisionTests: XCTestCase {

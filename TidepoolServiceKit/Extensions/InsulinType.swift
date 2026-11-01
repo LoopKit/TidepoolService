@@ -8,7 +8,6 @@
 
 import LoopKit
 import TidepoolKit
-import LoopAlgorithm
 
 extension InsulinType {
     var datum: TInsulinDatum.Formulation {

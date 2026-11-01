@@ -7,7 +7,6 @@
 //
 
 import XCTest
-import LoopAlgorithm
 import TidepoolKit
 import LoopKit
 @testable import TidepoolServiceKit

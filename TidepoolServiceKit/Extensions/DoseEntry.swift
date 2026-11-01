@@ -6,7 +6,6 @@
 //  Copyright © 2022 LoopKit Authors. All rights reserved.
 //
 
-import LoopAlgorithm
 import LoopKit
 import TidepoolKit
 
