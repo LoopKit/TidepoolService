@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import LoopAlgorithm
 import LoopKit
 import os.log
 import TidepoolKit
@@ -130,5 +129,15 @@ extension DeviceLogEntryType {
         case .connection:
             return .connection
         }
+    }
+}
+
+fileprivate extension Date {
+    func dateFlooredToTimeInterval(_ interval: TimeInterval) -> Date {
+        if interval == 0 {
+            return self
+        }
+
+        return Date(timeIntervalSinceReferenceDate: floor(self.timeIntervalSinceReferenceDate / interval) * interval)
     }
 }
