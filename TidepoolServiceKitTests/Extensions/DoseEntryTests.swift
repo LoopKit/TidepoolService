@@ -12,7 +12,6 @@ import XCTest
 import Foundation
 import LoopKit
 import TidepoolKit
-import LoopAlgorithm
 @testable import TidepoolServiceKit
 
 class DoseEntryDataTests: XCTestCase {

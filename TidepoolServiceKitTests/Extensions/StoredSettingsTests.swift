@@ -8,7 +8,6 @@
 
 import XCTest
 import HealthKit
-import LoopAlgorithm
 import LoopKit
 import TidepoolKit
 @testable import TidepoolServiceKit
