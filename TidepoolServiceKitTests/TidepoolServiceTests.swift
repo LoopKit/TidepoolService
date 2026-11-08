@@ -203,7 +203,99 @@ class TidepoolServiceTests: XCTestCase {
         XCTAssertEqual(lastCGMSettings!.id, created[4].id)
         XCTAssertEqual(lastPumpSettings!.id, created[5].id)
     }
-    
+
+}
+
+@MainActor
+class TidepoolServiceSessionTests: XCTestCase {
+    private var tidepoolService: TidepoolService!
+    private var serviceDelegate: MockServiceDelegate!
+    private let session = TSession(environment: TEnvironment(host: "test.tidepool.org", port: 443), accessToken: "access", accessTokenExpiration: nil, refreshToken: "refresh", userId: "1234567890", username: "test@test.com", userRoles: [])
+
+    override func setUp() {
+        super.setUp()
+        serviceDelegate = MockServiceDelegate()
+        tidepoolService = TidepoolService(hostIdentifier: "Loop", hostVersion: "1.2.3")
+        tidepoolService.sessionStorage = MockSessionStorage()
+        tidepoolService.serviceDelegate = serviceDelegate
+    }
+
+    func testLoggingOutIssuesAuthenticationAlert() async {
+        tidepoolService.apiDidUpdateSession(session)
+        await serviceDelegate.waitForRetracted(count: 1)
+
+        tidepoolService.apiDidUpdateSession(nil)
+        await serviceDelegate.waitForIssued(count: 1)
+
+        XCTAssertEqual(serviceDelegate.issued.first?.alertIdentifier, "authentication-needed")
+    }
+
+    func testLoggingBackInRetractsAuthenticationAlert() async {
+        tidepoolService.apiDidUpdateSession(session)
+        tidepoolService.apiDidUpdateSession(nil)
+        await serviceDelegate.waitForIssued(count: 1)
+
+        tidepoolService.apiDidUpdateSession(session)
+        await serviceDelegate.waitForRetracted(count: 2)
+
+        XCTAssertEqual(serviceDelegate.retracted.last?.alertIdentifier, "authentication-needed")
+    }
+
+    func testRefreshingSessionDoesNotRetract() async {
+        tidepoolService.apiDidUpdateSession(session)
+        await serviceDelegate.waitForRetracted(count: 1)
+
+        let refreshed = TSession(environment: session.environment, accessToken: "access2", accessTokenExpiration: nil, refreshToken: "refresh2", userId: session.userId, username: session.username, userRoles: [])
+        tidepoolService.apiDidUpdateSession(refreshed)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        XCTAssertEqual(serviceDelegate.retracted.count, 1)
+    }
+}
+
+private class MockSessionStorage: SessionStorage {
+    var sessions: [String: TSession] = [:]
+
+    func setSession(_ session: TSession?, for service: String) throws {
+        sessions[service] = session
+    }
+
+    func getSession(for service: String) throws -> TSession? {
+        sessions[service]
+    }
+}
+
+private class MockServiceDelegate: ServiceDelegate {
+    let hostIdentifier = "Loop"
+    let hostVersion = "1.2.3"
+
+    @MainActor var issued: [Alert.Identifier] = []
+    @MainActor var retracted: [Alert.Identifier] = []
+
+    @MainActor func issueAlert(_ alert: Alert) async {
+        issued.append(alert.identifier)
+    }
+
+    @MainActor func retractAlert(identifier: Alert.Identifier) async {
+        retracted.append(identifier)
+    }
+
+    @MainActor func waitForIssued(count: Int) async {
+        for _ in 0..<100 where issued.count < count {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    @MainActor func waitForRetracted(count: Int) async {
+        for _ in 0..<100 where retracted.count < count {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    func enactRemoteOverride(name: String, durationTime: TimeInterval?, remoteAddress: String) async throws {}
+    func cancelRemoteOverride() async throws {}
+    func deliverRemoteCarbs(amountInGrams: Double, absorptionTime: TimeInterval?, foodType: String?, startDate: Date?) async throws {}
+    func deliverRemoteBolus(amountInUnits: Double, decisionId: UUID?) async throws {}
 }
 
 fileprivate extension StoredSettings.ControllerDevice {
