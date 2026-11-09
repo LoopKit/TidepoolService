@@ -602,6 +602,17 @@ extension TidepoolService: RemoteDataService {
         // TODO: Upload sensor/transmitter changes
     }
 
+    public var exerciseDataLimit: Int? { return 100 }
+
+    public func uploadExerciseData(added: [StoredWorkout], deleted: [UUID]) async throws {
+        guard let userId else {
+            throw TidepoolServiceError.configuration
+        }
+
+        let _ = try await createData(added.map { $0.datum(for: userId) })
+        let _ = try await deleteData(withSelectors: deleted.map(StoredWorkout.selector))
+    }
+
     public func remoteNotificationWasReceived(_ notification: [String: AnyObject]) async throws {
         throw RemoteNotificationError.remoteCommandsNotSupported
     }
