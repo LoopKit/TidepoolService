@@ -24,7 +24,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:25:23Z")!,
                                   value: 0.75,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -71,7 +71,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -118,7 +118,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -164,7 +164,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -215,7 +215,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -261,7 +261,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -312,7 +312,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:30:23Z")!,
                                   value: 0,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Resume Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -334,7 +334,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:30:23Z")!,
                                   value: 0,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Suspend Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -378,7 +378,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -431,7 +431,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -489,7 +489,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -542,7 +542,7 @@ class DoseEntryDataTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -611,7 +611,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:25:23Z")!,
                                   value: 0.75,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -628,7 +628,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -645,7 +645,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -662,7 +662,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                   value: 4.25,
                                   unit: .units,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 3.5,
                                   description: "Test Bolus Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -679,7 +679,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:30:23Z")!,
                                   value: 0,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Resume Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -696,7 +696,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:30:23Z")!,
                                   value: 0,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: nil,
                                   description: "Test Suspend Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -713,7 +713,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -730,7 +730,7 @@ class DoseEntrySelectorTests: XCTestCase {
                                   endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                   value: 1.5,
                                   unit: .unitsPerHour,
-                                  decisionId: nil,
+                                  doseId: nil,
                                   deliveredUnits: 0.5,
                                   description: "Test Temp Basal Dose",
                                   syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -742,7 +742,7 @@ class DoseEntrySelectorTests: XCTestCase {
 
     func testOverlayAutomationHistory_NoAutomationHistory() {
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: Date(), endDate: Date().addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: Date(), endDate: Date().addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let result = doses.overlayAutomationHistory([])
 
@@ -753,7 +753,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_SingleAutomationPeriod() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(3600), value: false)
@@ -768,7 +768,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_MultipleAutomationPeriods() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(1800), value: false),
@@ -785,7 +785,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_PartialOverlap() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now.addingTimeInterval(1800), endDate: now.addingTimeInterval(4800), value: false)
@@ -802,8 +802,8 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_NonBasalDoses() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .bolus, startDate: now, endDate: now.addingTimeInterval(300), value: 2.0, unit: .unitsPerHour, decisionId: nil, automatic: nil, manuallyEntered: false, isMutable: false),
-            DoseEntry(type: .basal, startDate: now.addingTimeInterval(300), endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .bolus, startDate: now, endDate: now.addingTimeInterval(300), value: 2.0, unit: .unitsPerHour, doseId: nil, automatic: nil, manuallyEntered: false, isMutable: false),
+            DoseEntry(type: .basal, startDate: now.addingTimeInterval(300), endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(3600), value: false)
@@ -819,7 +819,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_PreexistingAutomationFlag() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, automatic: true, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, automatic: true, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(3600), value: false)
@@ -834,7 +834,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_DeliveredUnitsAdjustment() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, deliveredUnits: 1.0, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, deliveredUnits: 1.0, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: false)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(1800), value: false),
@@ -853,7 +853,7 @@ class DoseEntrySelectorTests: XCTestCase {
     func testOverlayAutomationHistory_MutableDose() {
         let now = Date()
         let doses: [DoseEntry] = [
-            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, decisionId: nil, deliveredUnits: 1.0, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: true)
+            DoseEntry(type: .basal, startDate: now, endDate: now.addingTimeInterval(3600), value: 1.0, unit: .unitsPerHour, doseId: nil, deliveredUnits: 1.0, syncIdentifier: "test", automatic: nil, manuallyEntered: false, isMutable: true)
         ]
         let automationHistory: [AbsoluteScheduleValue<Bool>] = [
             AbsoluteScheduleValue(startDate: now, endDate: now.addingTimeInterval(1800), value: false),
