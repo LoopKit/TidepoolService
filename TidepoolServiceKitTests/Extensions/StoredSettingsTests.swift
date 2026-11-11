@@ -240,6 +240,26 @@ class StoredSettingsTests: XCTestCase {
         )
     }
     
+    func testDatumPumpSettingsNamesSchedulesAfterProfiles() {
+        var settings = StoredSettings.test
+        let live = settings.liveTherapyProfile!
+        var sport = live
+        sport.name = "Sport"
+        settings.basalRateSchedule = BasalRateSchedule(dailyItems: [RepeatingScheduleValue(startTime: 0, value: 0.5)], timeZone: live.basalRateSchedule.timeZone)
+        sport.basalRateSchedule = settings.basalRateSchedule!
+        settings.therapyProfiles = [live, sport]
+        settings.activeProfileName = "Sport"
+
+        let datum = settings.datumPumpSettings(for: "1234567890", hostIdentifier: "Loop", hostVersion: "1.2.3")
+
+        XCTAssertEqual(datum.activeScheduleName, "Sport")
+        XCTAssertEqual(datum.basalRateSchedules?["Sport"]?.map(\.rate), [0.5])
+        XCTAssertEqual(datum.basalRateSchedules?["Default"]?.count, live.basalRateSchedule.items.count)
+        XCTAssertEqual(Set(datum.carbohydrateRatioSchedules?.keys ?? [:].keys), ["Default", "Sport"])
+        XCTAssertEqual(Set(datum.insulinSensitivitySchedules?.keys ?? [:].keys), ["Default", "Sport"])
+        XCTAssertEqual(Set(datum.bloodGlucoseTargetSchedules?.keys ?? [:].keys), ["Default", "Sport"])
+    }
+
     private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder.tidepool
         encoder.outputFormatting.insert(.prettyPrinted)

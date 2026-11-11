@@ -296,6 +296,10 @@ private class MockServiceDelegate: ServiceDelegate {
     func cancelRemoteOverride() async throws {}
     func deliverRemoteCarbs(amountInGrams: Double, absorptionTime: TimeInterval?, foodType: String?, startDate: Date?) async throws {}
     func deliverRemoteBolus(amountInUnits: Double, decisionId: UUID?) async throws {}
+    func switchRemoteTherapyProfile(name: String, expectedFingerprint: String) async throws {}
+    func saveRemoteTherapyProfile(_ profile: TherapyProfile, originalName: String?, expectedFingerprint: String?) async throws {}
+    func deleteRemoteTherapyProfile(name: String, expectedFingerprint: String) async throws {}
+    func saveRemoteScheduledProfileSwitches(_ entries: [ScheduledProfileSwitch], expectedFingerprint: String) async throws {}
 }
 
 fileprivate extension StoredSettings.ControllerDevice {
