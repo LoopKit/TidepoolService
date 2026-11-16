@@ -604,6 +604,10 @@ extension TidepoolService: RemoteDataService {
 
     public var exerciseDataLimit: Int? { return 100 }
 
+    public var exerciseDataDescription: String? {
+        LocalizedString("Tidepool receives your workouts. If you donate your Tidepool data to research, they are included.", comment: "What Tidepool does with exercise data, shown with the exercise data setting")
+    }
+
     public func uploadExerciseData(added: [StoredWorkout], deleted: [UUID]) async throws {
         guard let userId else {
             throw TidepoolServiceError.configuration
