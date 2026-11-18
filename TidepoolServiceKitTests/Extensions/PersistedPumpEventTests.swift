@@ -689,37 +689,51 @@ class PersistedPumpEventTests: XCTestCase {
         )
     }
 
-    private func replaceComponentData(_ componentType: ReplaceableComponent, raw: String) throws -> [[String: Any]] {
+    private func replaceComponentData(_ componentType: ReplaceableComponent, replacement: ComponentReplacement? = nil) throws -> [[String: Any]] {
         let pumpEvent = PersistedPumpEvent(date: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
                                            persistedDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
                                            dose: nil,
                                            isUploaded: false,
                                            objectIDURL: URL(string: "x-coredata:///PumpEvent/18CF3948-0B3D-4B12-8BFE-14986B0E6784")!,
-                                           raw: raw.data(using: .utf8),
+                                           raw: "18CF3948-0B3D-4B12-8BFE-14986B0E6784".data(using: .utf8),
                                            title: "Pod Change (Omnipod DASH)",
-                                           type: .replaceComponent(componentType: componentType))
+                                           type: .replaceComponent(componentType: componentType),
+                                           componentReplacement: replacement)
         let data = pumpEvent.data(for: "2B03D96C-6F5D-4140-99CD-80C3E64D6011", hostIdentifier: "Loop", hostVersion: "1.2.3")
         return try XCTUnwrap(JSONSerialization.jsonObject(with: Self.encoder.encode(data)) as? [[String: Any]])
     }
 
     func testDataReplacePumpWithDetails() throws {
-        let data = try replaceComponentData(.pump, raw: #"{"date":"2020-01-02T03:00:23Z","event":"Pod Change","lotNumber":"172723","primeVolume":0.5,"sequenceNumber":"1234567"}"#)
+        let replacement = ComponentReplacement(previousStopDate: Self.dateFormatter.date(from: "2020-01-02T02:00:00Z")!,
+                                               reason: .fault,
+                                               faultCode: "0x5C",
+                                               previousRemainingUnits: 23.5,
+                                               primes: [.init(target: .tubing, volume: 2.6), .init(target: .cannula, volume: 0.5)],
+                                               expirationDate: Self.dateFormatter.date(from: "2020-01-05T03:00:23Z")!,
+                                               componentIdentifier: "43620-560313")
+        let data = try replaceComponentData(.pump, replacement: replacement)
 
-        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange", "prime"])
-        XCTAssertEqual(data[1]["primeTarget"] as? String, "cannula")
-        XCTAssertEqual(data[1]["volume"] as? Double, 0.5)
-        XCTAssertNotEqual(data[0]["id"] as? String, data[1]["id"] as? String)
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange", "prime", "prime"])
+        XCTAssertEqual(data[1]["primeTarget"] as? String, "tubing")
+        XCTAssertEqual(data[1]["volume"] as? Double, 2.6)
+        XCTAssertEqual(data[2]["primeTarget"] as? String, "cannula")
+        XCTAssertEqual(data[2]["volume"] as? Double, 0.5)
+        XCTAssertEqual(Set(data.compactMap { $0["id"] as? String }).count, 3)
         for datum in data {
             let payload = try XCTUnwrap(datum["payload"] as? [String: Any])
-            XCTAssertEqual(payload["lotNumber"] as? String, "172723")
-            XCTAssertEqual(payload["sequenceNumber"] as? String, "1234567")
-            XCTAssertNotNil(payload["syncIdentifier"])
+            XCTAssertEqual(payload["reason"] as? String, "fault")
+            XCTAssertEqual(payload["faultCode"] as? String, "0x5C")
+            XCTAssertEqual(payload["previousStopTime"] as? String, "2020-01-02T02:00:00Z")
+            XCTAssertEqual(payload["previousRemainingUnits"] as? Double, 23.5)
+            XCTAssertEqual(payload["expirationTime"] as? String, "2020-01-05T03:00:23Z")
+            let componentId = try XCTUnwrap(payload["componentId"] as? String)
+            XCTAssertFalse(componentId.contains("43620"))
             XCTAssertEqual(datum["time"] as? String, "2020-01-02T03:00:23.000Z")
         }
     }
 
-    func testDataReplacePumpWithOpaqueRaw() throws {
-        let data = try replaceComponentData(.pump, raw: "PATCH_REPLACE 2020-01-02 03:00:23")
+    func testDataReplacePumpWithoutDetails() throws {
+        let data = try replaceComponentData(.pump)
 
         XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange", "prime"])
         XCTAssertEqual(data[1]["primeTarget"] as? String, "cannula")
@@ -728,14 +742,20 @@ class PersistedPumpEventTests: XCTestCase {
     }
 
     func testDataReplaceReservoir() throws {
-        let data = try replaceComponentData(.reservoir, raw: "Reservoir 2020-01-02 03:00:23")
+        let data = try replaceComponentData(.reservoir)
         XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange"])
     }
 
     func testDataReplaceInfusionSet() throws {
-        let data = try replaceComponentData(.infusionSet, raw: "SetChange 2020-01-02 03:00:23")
+        let data = try replaceComponentData(.infusionSet)
         XCTAssertEqual(data.map { $0["subType"] as? String }, ["prime"])
         XCTAssertEqual(data[0]["primeTarget"] as? String, "cannula")
+    }
+
+    func testDataReplaceTubing() throws {
+        let data = try replaceComponentData(.tubing)
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["prime"])
+        XCTAssertEqual(data[0]["primeTarget"] as? String, "tubing")
     }
 
     private static let encoder: JSONEncoder = {
