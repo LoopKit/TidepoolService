@@ -51,6 +51,8 @@ extension PersistedPumpEvent: IdentifiableDatum {
             return dataForAlarmClear(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .prime:
             return dataForPrime(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+        case .replaceComponent(let componentType):
+            return dataForReplaceComponent(componentType, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .resume:
             return dataForResume(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .rewind:
@@ -119,6 +121,40 @@ extension PersistedPumpEvent: IdentifiableDatum {
             data.append(contentsOf: dataForResume(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
         }
         return data
+    }
+
+    private func dataForReplaceComponent(_ componentType: ReplaceableComponent, for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
+        let details = rawDetails
+        var payload = datumPayload
+        payload["lotNumber"] = details["lotNumber"] as? String
+        payload["sequenceNumber"] = details["sequenceNumber"] as? String
+
+        var data: [TDatum] = []
+        if componentType == .pump || componentType == .reservoir {
+            var datum = TReservoirChangeDeviceEventDatum(time: date)
+            let origin = datumOrigin(for: resolvedIdentifier(for: TReservoirChangeDeviceEventDatum.self), hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+            datum = datum.adornWith(id: datumId(for: userId, type: TReservoirChangeDeviceEventDatum.self),
+                                    payload: payload,
+                                    origin: origin)
+            data.append(datum)
+        }
+        if componentType == .pump || componentType == .infusionSet {
+            var datum = TPrimeDeviceEventDatum(time: date, volume: details["primeVolume"] as? Double, target: .cannula)
+            let origin = datumOrigin(for: resolvedIdentifier(for: TPrimeDeviceEventDatum.self), hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+            datum = datum.adornWith(id: datumId(for: userId, type: TPrimeDeviceEventDatum.self),
+                                    payload: payload,
+                                    origin: origin)
+            data.append(datum)
+        }
+        return data
+    }
+
+    /// A pump manager may record a component change's raw data as a JSON object with `lotNumber`, `sequenceNumber` and `primeVolume`.
+    private var rawDetails: [String: Any] {
+        guard let raw, let object = try? JSONSerialization.jsonObject(with: raw) as? [String: Any] else {
+            return [:]
+        }
+        return object
     }
 
     private func dataForResume(for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
