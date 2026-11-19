@@ -704,10 +704,9 @@ class PersistedPumpEventTests: XCTestCase {
     }
 
     func testDataReplacePumpWithDetails() throws {
-        let replacement = ComponentReplacement(previousStopDate: Self.dateFormatter.date(from: "2020-01-02T02:00:00Z")!,
-                                               reason: .fault,
-                                               faultCode: "0x5C",
-                                               previousRemainingUnits: 23.5,
+        let replacement = ComponentReplacement(previous: .init(stopDate: Self.dateFormatter.date(from: "2020-01-02T02:00:00Z")!,
+                                                               remainingUnits: 23.5,
+                                                               reason: .fault(code: "0x5C")),
                                                primes: [.init(target: .tubing, volume: 2.6), .init(target: .cannula, volume: 0.5)],
                                                expirationDate: Self.dateFormatter.date(from: "2020-01-05T03:00:23Z")!,
                                                componentIdentifier: "43620-560313")

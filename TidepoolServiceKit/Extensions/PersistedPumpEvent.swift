@@ -167,10 +167,10 @@ extension PersistedPumpEvent: IdentifiableDatum {
             return payload
         }
         let formatter = ISO8601DateFormatter()
-        payload["previousStopTime"] = replacement.previousStopDate.map { formatter.string(from: $0) }
-        payload["reason"] = replacement.reason?.rawValue
-        payload["faultCode"] = replacement.faultCode
-        payload["previousRemainingUnits"] = replacement.previousRemainingUnits
+        payload["previousStopTime"] = replacement.previous?.stopDate.map { formatter.string(from: $0) }
+        payload["reason"] = replacement.previous?.reason.type
+        payload["faultCode"] = replacement.previous?.reason.code
+        payload["previousRemainingUnits"] = replacement.previous?.remainingUnits
         payload["expirationTime"] = replacement.expirationDate.map { formatter.string(from: $0) }
         // An opaque id for the component, so its lot and serial numbers are not uploaded
         payload["componentId"] = replacement.componentIdentifier.flatMap { "\(userId):\($0)".md5hash }
