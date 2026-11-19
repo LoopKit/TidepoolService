@@ -142,8 +142,6 @@ extension PersistedPumpEvent: IdentifiableDatum {
             switch componentType {
             case .pump, .infusionSet:
                 primes = [ComponentReplacement.Prime(target: .cannula, volume: 0)]
-            case .tubing:
-                primes = [ComponentReplacement.Prime(target: .tubing, volume: 0)]
             case .reservoir:
                 break
             }

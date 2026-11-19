@@ -752,12 +752,6 @@ class PersistedPumpEventTests: XCTestCase {
         XCTAssertEqual(data[0]["primeTarget"] as? String, "cannula")
     }
 
-    func testDataReplaceTubing() throws {
-        let data = try replaceComponentData(.tubing)
-        XCTAssertEqual(data.map { $0["subType"] as? String }, ["prime"])
-        XCTAssertEqual(data[0]["primeTarget"] as? String, "tubing")
-    }
-
     private static let encoder: JSONEncoder = {
         let encoder = JSONEncoder.tidepool
         encoder.outputFormatting.insert(.prettyPrinted)
