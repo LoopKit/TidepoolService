@@ -255,7 +255,7 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:25:23Z")!,
                                                            value: 0.75,
                                                            unit: .units,
-                                                           decisionId: nil,
+                                                           doseId: nil,
                                                            deliveredUnits: nil,
                                                            description: "Test Basal Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -286,7 +286,7 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:00:53Z")!,
                                                            value: 4.25,
                                                            unit: .units,
-                                                           decisionId: nil,
+                                                           doseId: nil,
                                                            deliveredUnits: 3.5,
                                                            description: "Test Bolus Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -666,7 +666,7 @@ class PersistedPumpEventTests: XCTestCase {
                                                            endDate: Self.dateFormatter.date(from: "2020-01-02T03:20:23Z")!,
                                                            value: 1.5,
                                                            unit: .unitsPerHour,
-                                                           decisionId: nil,
+                                                           doseId: nil,
                                                            deliveredUnits: 0.5,
                                                            description: "Test Temp Basal Dose",
                                                            syncIdentifier: "18CF3948-0B3D-4B12-8BFE-14986B0E6784",
@@ -687,6 +687,55 @@ class PersistedPumpEventTests: XCTestCase {
 ]
 """
         )
+    }
+
+    private func replaceComponentData(_ componentType: ReplaceableComponent, raw: String) throws -> [[String: Any]] {
+        let pumpEvent = PersistedPumpEvent(date: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
+                                           persistedDate: Self.dateFormatter.date(from: "2020-01-02T03:00:23Z")!,
+                                           dose: nil,
+                                           isUploaded: false,
+                                           objectIDURL: URL(string: "x-coredata:///PumpEvent/18CF3948-0B3D-4B12-8BFE-14986B0E6784")!,
+                                           raw: raw.data(using: .utf8),
+                                           title: "Pod Change (Omnipod DASH)",
+                                           type: .replaceComponent(componentType: componentType))
+        let data = pumpEvent.data(for: "2B03D96C-6F5D-4140-99CD-80C3E64D6011", hostIdentifier: "Loop", hostVersion: "1.2.3")
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: Self.encoder.encode(data)) as? [[String: Any]])
+    }
+
+    func testDataReplacePumpWithDetails() throws {
+        let data = try replaceComponentData(.pump, raw: #"{"date":"2020-01-02T03:00:23Z","event":"Pod Change","lotNumber":"172723","primeVolume":0.5,"sequenceNumber":"1234567"}"#)
+
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange", "prime"])
+        XCTAssertEqual(data[1]["primeTarget"] as? String, "cannula")
+        XCTAssertEqual(data[1]["volume"] as? Double, 0.5)
+        XCTAssertNotEqual(data[0]["id"] as? String, data[1]["id"] as? String)
+        for datum in data {
+            let payload = try XCTUnwrap(datum["payload"] as? [String: Any])
+            XCTAssertEqual(payload["lotNumber"] as? String, "172723")
+            XCTAssertEqual(payload["sequenceNumber"] as? String, "1234567")
+            XCTAssertNotNil(payload["syncIdentifier"])
+            XCTAssertEqual(datum["time"] as? String, "2020-01-02T03:00:23.000Z")
+        }
+    }
+
+    func testDataReplacePumpWithOpaqueRaw() throws {
+        let data = try replaceComponentData(.pump, raw: "PATCH_REPLACE 2020-01-02 03:00:23")
+
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange", "prime"])
+        XCTAssertEqual(data[1]["primeTarget"] as? String, "cannula")
+        XCTAssertNil(data[1]["volume"])
+        XCTAssertEqual((data[0]["payload"] as? [String: Any])?.keys.sorted(), ["syncIdentifier"])
+    }
+
+    func testDataReplaceReservoir() throws {
+        let data = try replaceComponentData(.reservoir, raw: "Reservoir 2020-01-02 03:00:23")
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange"])
+    }
+
+    func testDataReplaceInfusionSet() throws {
+        let data = try replaceComponentData(.infusionSet, raw: "SetChange 2020-01-02 03:00:23")
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["prime"])
+        XCTAssertEqual(data[0]["primeTarget"] as? String, "cannula")
     }
 
     private static let encoder: JSONEncoder = {
