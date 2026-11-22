@@ -725,8 +725,7 @@ class PersistedPumpEventTests: XCTestCase {
             XCTAssertEqual(payload["previousStopTime"] as? String, "2020-01-02T02:00:00Z")
             XCTAssertEqual(payload["previousRemainingUnits"] as? Double, 23.5)
             XCTAssertEqual(payload["expirationTime"] as? String, "2020-01-05T03:00:23Z")
-            let componentId = try XCTUnwrap(payload["componentId"] as? String)
-            XCTAssertFalse(componentId.contains("43620"))
+            XCTAssertEqual(payload["componentId"] as? String, "43620-560313")
             XCTAssertEqual(datum["time"] as? String, "2020-01-02T03:00:23.000Z")
         }
     }

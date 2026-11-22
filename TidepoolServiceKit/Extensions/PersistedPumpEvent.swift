@@ -36,7 +36,7 @@ import TidepoolKit
  - type                     PumpEventType?      .type, .subType
  - automatic                Bool?               (N/A - unused)
  - alarmType                PumpAlarmType?      .alarmType, .payload["otherAlarmType"]
- - componentReplacement     ComponentReplacement?  .volume, .primeTarget, .payload (componentId is a hash of componentIdentifier)
+ - componentReplacement     ComponentReplacement?  .volume, .primeTarget, .payload
  */
 
 extension PersistedPumpEvent: IdentifiableDatum {
@@ -172,8 +172,7 @@ extension PersistedPumpEvent: IdentifiableDatum {
         payload["faultCode"] = replacement.previous?.reason.code
         payload["previousRemainingUnits"] = replacement.previous?.remainingUnits
         payload["expirationTime"] = replacement.expirationDate.map { formatter.string(from: $0) }
-        // An opaque id for the component, so its lot and serial numbers are not uploaded
-        payload["componentId"] = replacement.componentIdentifier.flatMap { "\(userId):\($0)".md5hash }
+        payload["componentId"] = replacement.componentIdentifier
         return payload
     }
 
