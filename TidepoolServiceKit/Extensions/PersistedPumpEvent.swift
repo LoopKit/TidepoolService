@@ -137,8 +137,9 @@ extension PersistedPumpEvent: IdentifiableDatum {
             data.append(datum)
         }
 
+        // Without details, a pump or infusion set change implies a cannula prime. With details, only the reported primes are uploaded.
         var primes = componentReplacement?.primes ?? []
-        if primes.isEmpty {
+        if componentReplacement == nil {
             switch componentType {
             case .pump, .infusionSet:
                 primes = [ComponentReplacement.Prime(target: .cannula, volume: 0)]

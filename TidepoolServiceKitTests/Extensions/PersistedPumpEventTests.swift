@@ -739,6 +739,14 @@ class PersistedPumpEventTests: XCTestCase {
         XCTAssertEqual((data[0]["payload"] as? [String: Any])?.keys.sorted(), ["syncIdentifier"])
     }
 
+    func testDataReplacePumpWithNoPrimes() throws {
+        let replacement = ComponentReplacement(previous: .init(reason: .userInitiated), componentIdentifier: "139173265-2")
+        let data = try replaceComponentData(.pump, replacement: replacement)
+
+        XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange"])
+        XCTAssertEqual((data[0]["payload"] as? [String: Any])?["componentId"] as? String, "139173265-2")
+    }
+
     func testDataReplaceReservoir() throws {
         let data = try replaceComponentData(.reservoir)
         XCTAssertEqual(data.map { $0["subType"] as? String }, ["reservoirChange"])
