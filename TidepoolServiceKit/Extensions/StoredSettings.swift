@@ -16,16 +16,18 @@ import TidepoolKit
  - date                             Date                                    .time
  - controllerTimeZone               TimeInterval                            .timeZone, .timeZoneOffset
  - dosingEnabled                    Bool                                    TPumpSettingsDatum.automatedDelivery
- - glucoseTargetRangeSchedule       GlucoseRangeSchedule?                   TPumpSettingsDatum.bloodGlucoseTargetSchedules["Default"]
+ - glucoseTargetRangeSchedule       GlucoseRangeSchedule?                   TPumpSettingsDatum.bloodGlucoseTargetSchedules[activeScheduleName]
  - preMealTargetRange               ClosedRange<HKQuantity>?                TPumpSettingsDatum.bloodGlucoseTargetPreprandial
  - overridePresets                  [TemporaryScheduleOverridePreset]?      TPumpSettingsDatum.overridePresets
  - maximumBasalRatePerHour          Double?                                 TPumpSettingsDatum.basal.rateMaximum.value
  - maximumBolus                     Double?                                 TPumpSettingsDatum.bolus.amountMaximum.value
  - suspendThreshold                 GlucoseThreshold?                       TPumpSettingsDatum.bloodGlucoseSafetyLimit
  - defaultRapidActingModel          StoredInsulinModel?                     TPumpSettingsDatum.insulinModel
- - basalRateSchedule                BasalRateSchedule?                      TPumpSettingsDatum.basalRateSchedules["Default"]
- - insulinSensitivitySchedule       InsulinSensitivitySchedule?             TPumpSettingsDatum.insulinSensitivitySchedules["Default"]
- - carbRatioSchedule                CarbRatioSchedule?                      TPumpSettingsDatum.carbohydrateRatioSchedules["Default"]
+ - basalRateSchedule                BasalRateSchedule?                      TPumpSettingsDatum.basalRateSchedules[activeScheduleName]
+ - insulinSensitivitySchedule       InsulinSensitivitySchedule?             TPumpSettingsDatum.insulinSensitivitySchedules[activeScheduleName]
+ - carbRatioSchedule                CarbRatioSchedule?                      TPumpSettingsDatum.carbohydrateRatioSchedules[activeScheduleName]
+ - therapyProfiles                  [TherapyProfile]                        the four schedule dictionaries, keyed by profile name
+ - activeProfileName                String?                                 TPumpSettingsDatum.activeScheduleName ("Default" when nil)
  - notificationSettings             NotificationSettings?                   TControllerSettingsDatum.notifications
  - controllerDevice                 ControllerDevice?                       TControllerSettingsDatum.device
  - pumpDevice                       HKDevice?                               TPumpSettingsDatum[.firmwareVersion, .hardwareVersion, .manufacturers, .model, .serialNumber, .softwareVersion]
@@ -144,7 +146,21 @@ extension StoredSettings: IdentifiableDatum {
     private var datumCGMUnits: TCGMSettingsDatum.Units { .milligramsPerDeciliter }
 
     private var datumPumpActiveScheduleName: String? {
-        return Self.activeScheduleNameDefault
+        return TherapyProfiles.activeName(activeProfileName)
+    }
+
+    /// The profiles other than the active one, whose schedules are the live ones.
+    private var datumInactiveProfiles: [TherapyProfile] {
+        let activeName = TherapyProfiles.activeName(activeProfileName)
+        return resolvedTherapyProfiles.filter { $0.name != activeName }
+    }
+
+    private func datumSchedules<Value>(live: [Value], _ transform: (TherapyProfile) -> [Value]) -> [String: [Value]] {
+        var schedules = [TherapyProfiles.activeName(activeProfileName): live]
+        for profile in datumInactiveProfiles {
+            schedules[profile.name] = transform(profile)
+        }
+        return schedules
     }
     
     private var datumPumpBasal: TPumpSettingsDatum.Basal? {
@@ -158,7 +174,9 @@ extension StoredSettings: IdentifiableDatum {
         guard let basalRateSchedule = basalRateSchedule else {
             return nil
         }
-        return [Self.activeScheduleNameDefault: basalRateSchedule.items.map { TPumpSettingsDatum.BasalRateStart(start: $0.startTime, rate: $0.value) }]
+        return datumSchedules(live: basalRateSchedule.items.map { TPumpSettingsDatum.BasalRateStart(start: $0.startTime, rate: $0.value) }) { profile in
+            profile.basalRateSchedule.items.map { TPumpSettingsDatum.BasalRateStart(start: $0.startTime, rate: $0.value) }
+        }
     }
     
     private var datumPumpBloodGlucoseSafetyLimit: Double? {
@@ -180,7 +198,9 @@ extension StoredSettings: IdentifiableDatum {
         guard let glucoseTargetRangeSchedule = glucoseTargetRangeSchedule else {
             return nil
         }
-        return [Self.activeScheduleNameDefault: glucoseTargetRangeSchedule.items(for: .milligramsPerDeciliter).map { TPumpSettingsDatum.BloodGlucoseStartTarget(start: $0.startTime, low: $0.value.minValue, high: $0.value.maxValue) }]
+        return datumSchedules(live: glucoseTargetRangeSchedule.items(for: .milligramsPerDeciliter).map { TPumpSettingsDatum.BloodGlucoseStartTarget(start: $0.startTime, low: $0.value.minValue, high: $0.value.maxValue) }) { profile in
+            profile.glucoseTargetRangeSchedule.items(for: .milligramsPerDeciliter).map { TPumpSettingsDatum.BloodGlucoseStartTarget(start: $0.startTime, low: $0.value.minValue, high: $0.value.maxValue) }
+        }
     }
     
     private var datumPumpBolus: TPumpSettingsDatum.Bolus? {
@@ -194,7 +214,9 @@ extension StoredSettings: IdentifiableDatum {
         guard let carbRatioSchedule = carbRatioSchedule else {
             return nil
         }
-        return [Self.activeScheduleNameDefault: carbRatioSchedule.items(for: .gram).map { TPumpSettingsDatum.CarbohydrateRatioStart(start: $0.startTime, amount: $0.value) }]
+        return datumSchedules(live: carbRatioSchedule.items(for: .gram).map { TPumpSettingsDatum.CarbohydrateRatioStart(start: $0.startTime, amount: $0.value) }) { profile in
+            profile.carbRatioSchedule.items(for: .gram).map { TPumpSettingsDatum.CarbohydrateRatioStart(start: $0.startTime, amount: $0.value) }
+        }
     }
     
     private var datumPumpDisplay: TPumpSettingsDatum.Display? {
@@ -250,7 +272,9 @@ extension StoredSettings: IdentifiableDatum {
         guard let insulinSensitivitySchedule = insulinSensitivitySchedule else {
             return nil
         }
-        return [Self.activeScheduleNameDefault: insulinSensitivitySchedule.items(for: .milligramsPerDeciliter).map { return TPumpSettingsDatum.InsulinSensitivityStart(start: $0.startTime, amount: $0.value) }]
+        return datumSchedules(live: insulinSensitivitySchedule.items(for: .milligramsPerDeciliter).map { TPumpSettingsDatum.InsulinSensitivityStart(start: $0.startTime, amount: $0.value) }) { profile in
+            profile.insulinSensitivitySchedule.items(for: .milligramsPerDeciliter).map { TPumpSettingsDatum.InsulinSensitivityStart(start: $0.startTime, amount: $0.value) }
+        }
     }
 
     private var datumPumpManufacturers: [String]? { pumpDevice?.manufacturer.map { [$0] } }
