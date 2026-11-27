@@ -36,6 +36,7 @@ import TidepoolKit
  - type                     PumpEventType?      .type, .subType
  - automatic                Bool?               (N/A - unused)
  - alarmType                PumpAlarmType?      .alarmType, .payload["otherAlarmType"]
+ - componentReplacement     ComponentReplacement?  .volume, .primeTarget, .payload
  */
 
 extension PersistedPumpEvent: IdentifiableDatum {
@@ -51,6 +52,8 @@ extension PersistedPumpEvent: IdentifiableDatum {
             return dataForAlarmClear(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .prime:
             return dataForPrime(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+        case .replaceComponent(let componentType):
+            return dataForReplaceComponent(componentType, for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .resume:
             return dataForResume(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion)
         case .rewind:
@@ -119,6 +122,59 @@ extension PersistedPumpEvent: IdentifiableDatum {
             data.append(contentsOf: dataForResume(for: userId, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
         }
         return data
+    }
+
+    private func dataForReplaceComponent(_ componentType: ReplaceableComponent, for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
+        let payload = componentReplacementPayload(for: userId)
+
+        var data: [TDatum] = []
+        if componentType == .pump || componentType == .reservoir {
+            var datum = TReservoirChangeDeviceEventDatum(time: date)
+            let origin = datumOrigin(for: resolvedIdentifier(for: TReservoirChangeDeviceEventDatum.self), hostIdentifier: hostIdentifier, hostVersion: hostVersion)
+            datum = datum.adornWith(id: datumId(for: userId, type: TReservoirChangeDeviceEventDatum.self),
+                                    payload: payload,
+                                    origin: origin)
+            data.append(datum)
+        }
+
+        // Without details, a pump or infusion set change implies a cannula prime. With details, only the reported primes are uploaded.
+        var primes = componentReplacement?.primes ?? []
+        if componentReplacement == nil {
+            switch componentType {
+            case .pump, .infusionSet:
+                primes = [ComponentReplacement.Prime(target: .cannula, volume: 0)]
+            case .reservoir:
+                break
+            }
+        }
+        for prime in primes {
+            // The cannula prime keeps the id it had before tubing primes were uploaded
+            var identifier = resolvedIdentifier(for: TPrimeDeviceEventDatum.self)
+            if prime.target != .cannula {
+                identifier += ":\(prime.target.rawValue)"
+            }
+            var datum = TPrimeDeviceEventDatum(time: date, volume: prime.volume > 0 ? prime.volume : nil, target: prime.target.datum)
+            datum = datum.adornWith(id: "\(userId):\(identifier)".md5hash!,
+                                    payload: payload,
+                                    origin: datumOrigin(for: identifier, hostIdentifier: hostIdentifier, hostVersion: hostVersion))
+            data.append(datum)
+        }
+        return data
+    }
+
+    private func componentReplacementPayload(for userId: String) -> TDictionary {
+        var payload = datumPayload
+        guard let replacement = componentReplacement else {
+            return payload
+        }
+        let formatter = ISO8601DateFormatter()
+        payload["previousStopTime"] = replacement.previous?.stopDate.map { formatter.string(from: $0) }
+        payload["reason"] = replacement.previous?.reason.type
+        payload["faultCode"] = replacement.previous?.reason.code
+        payload["previousRemainingUnits"] = replacement.previous?.remainingUnits
+        payload["expirationTime"] = replacement.expirationDate.map { formatter.string(from: $0) }
+        payload["componentId"] = replacement.componentIdentifier
+        return payload
     }
 
     private func dataForResume(for userId: String, hostIdentifier: String, hostVersion: String) -> [TDatum] {
@@ -211,6 +267,17 @@ extension PersistedPumpEvent: IdentifiableDatum {
         var dictionary = TDictionary()
         dictionary["syncIdentifier"] = syncIdentifier
         return dictionary
+    }
+}
+
+fileprivate extension ComponentReplacement.Prime.Target {
+    var datum: TPrimeDeviceEventDatum.Target {
+        switch self {
+        case .cannula:
+            return .cannula
+        case .tubing:
+            return .tubing
+        }
     }
 }
 
